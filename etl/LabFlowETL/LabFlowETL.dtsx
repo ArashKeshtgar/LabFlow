@@ -1,0 +1,2279 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="10/3/2026 11:37:49 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="ARASH-PC"
+  DTS:CreatorName="ARASH-PC\akesh"
+  DTS:Description="Legacy Laboratory database -&gt; de-identified staging -&gt; LabFlow reporting warehouse (dw)."
+  DTS:DTSID="{0FB27945-7799-483A-942C-6A7F7EF4B8D2}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="15.0.2000.5"
+  DTS:LocaleID="3072"
+  DTS:ObjectName="LabFlowETL"
+  DTS:ProtectionLevel="0"
+  DTS:VersionGUID="{F5DF29E9-6DBA-4D77-9894-1B0D80F46EE7}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[LabFlow]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+      DTS:ObjectName="LabFlow">
+      <DTS:PropertyExpression
+        DTS:Name="ConnectionString">"Data Source=" + @[$Package::LabFlowServer] + ";Initial Catalog=" + @[$Package::LabFlowDatabase] + ";Provider=MSOLEDBSQL;Integrated Security=SSPI;"</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="Data Source=.;Initial Catalog=LabFlow;Provider=MSOLEDBSQL;Integrated Security=SSPI;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Legacy]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{BF73862E-570E-4641-9F19-6470B7BAF83C}"
+      DTS:ObjectName="Legacy">
+      <DTS:PropertyExpression
+        DTS:Name="ConnectionString">"Data Source=" + @[$Package::LegacyServer] + ";Initial Catalog=" + @[$Package::LegacyDatabase] + ";Provider=MSOLEDBSQL;Integrated Security=SSPI;"</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="Data Source=.;Initial Catalog=Laboratory;Provider=MSOLEDBSQL;Integrated Security=SSPI;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:PackageParameters>
+    <DTS:PackageParameter
+      DTS:CreationName=""
+      DTS:DataType="8"
+      DTS:DTSID="{C36AE9F9-696C-407B-8CB9-77F8291F8B55}"
+      DTS:ObjectName="LabFlowDatabase">
+      <DTS:Property
+        DTS:DataType="8"
+        DTS:Name="ParameterValue">LabFlow</DTS:Property>
+    </DTS:PackageParameter>
+    <DTS:PackageParameter
+      DTS:CreationName=""
+      DTS:DataType="8"
+      DTS:DTSID="{826FBB84-8B1D-4B36-BEFA-14295F2CFF01}"
+      DTS:ObjectName="LabFlowServer">
+      <DTS:Property
+        DTS:DataType="8"
+        DTS:Name="ParameterValue">.</DTS:Property>
+    </DTS:PackageParameter>
+    <DTS:PackageParameter
+      DTS:CreationName=""
+      DTS:DataType="8"
+      DTS:DTSID="{2AD4221E-268C-47A7-A853-CED4E21351E8}"
+      DTS:ObjectName="LegacyDatabase">
+      <DTS:Property
+        DTS:DataType="8"
+        DTS:Name="ParameterValue">Laboratory</DTS:Property>
+    </DTS:PackageParameter>
+    <DTS:PackageParameter
+      DTS:CreationName=""
+      DTS:DataType="8"
+      DTS:DTSID="{A779AF0A-6961-4F6E-AAD2-E5FD623A63EB}"
+      DTS:ObjectName="LegacyServer">
+      <DTS:Property
+        DTS:DataType="8"
+        DTS:Name="ParameterValue">.</DTS:Property>
+    </DTS:PackageParameter>
+    <DTS:PackageParameter
+      DTS:CreationName=""
+      DTS:DataType="3"
+      DTS:Description="Re-extract this many visits below the high-water mark, to pick up answers entered after the visit."
+      DTS:DTSID="{0F091F98-B36D-4645-AE81-355E86FB1025}"
+      DTS:ObjectName="LookbackVisits">
+      <DTS:Property
+        DTS:DataType="3"
+        DTS:Name="ParameterValue">200</DTS:Property>
+    </DTS:PackageParameter>
+  </DTS:PackageParameters>
+  <DTS:Variables>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{815CDAE3-BC20-40D2-A66A-25B16E8AB237}"
+      DTS:IncludeInDebugDump="6789"
+      DTS:Namespace="User"
+      DTS:ObjectName="FromVisitNo">
+      <DTS:VariableValue
+        DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{8AD048FE-FEBB-49CF-A91C-2ED9C4B1C442}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="HashSalt">
+      <DTS:VariableValue
+        DTS:DataType="8"
+        xml:space="preserve"></DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{7AF3D19B-8BD0-4BEF-AE08-0D55AA6046C3}"
+      DTS:IncludeInDebugDump="6789"
+      DTS:Namespace="User"
+      DTS:ObjectName="RowsResults">
+      <DTS:VariableValue
+        DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{CC4F6C25-0995-4979-A8D9-DAAE5DFE1BDC}"
+      DTS:IncludeInDebugDump="6789"
+      DTS:Namespace="User"
+      DTS:ObjectName="RowsVisits">
+      <DTS:VariableValue
+        DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{84257F0B-BF5C-47A4-8D27-BD96E3977FB0}"
+      DTS:IncludeInDebugDump="6789"
+      DTS:Namespace="User"
+      DTS:ObjectName="RunId">
+      <DTS:VariableValue
+        DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{9790B903-5210-4F07-9D1B-B84D73ABE24B}"
+      DTS:EvaluateAsExpression="True"
+      DTS:Expression="&quot;SELECT r.FishNo AS LegacyVisitNo, r.Az_ID AS LegacyAzId, r.ChildAz_ID AS LegacyChildAzId, r.[Row] AS RowNo, r.Row2 AS RowNo2, CAST(r.Answer1 AS nvarchar(250)) AS Answer, CAST(r.Unit AS nvarchar(15)) AS Unit, CAST(r.NormalRange AS nvarchar(200)) AS NormalRange, r.OutOfNormalRange AS OutOfRange, r.OutOfCriticalNormalRange AS OutOfCritical, CAST(r.NoAnswer AS nvarchar(1)) AS NoAnswer FROM dbo.MRJAZ r WHERE r.FishNo &gt; &quot; + (DT_WSTR, 12) @[User::FromVisitNo]"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="SqlResults">
+      <DTS:VariableValue
+        DTS:DataType="8">SELECT r.FishNo AS LegacyVisitNo, r.Az_ID AS LegacyAzId, r.ChildAz_ID AS LegacyChildAzId, r.[Row] AS RowNo, r.Row2 AS RowNo2, CAST(r.Answer1 AS nvarchar(250)) AS Answer, CAST(r.Unit AS nvarchar(15)) AS Unit, CAST(r.NormalRange AS nvarchar(200)) AS NormalRange, r.OutOfNormalRange AS OutOfRange, r.OutOfCriticalNormalRange AS OutOfCritical, CAST(r.NoAnswer AS nvarchar(1)) AS NoAnswer FROM dbo.MRJAZ r WHERE r.FishNo &gt; 0</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{AFCB9F81-492E-4EB6-8433-94EF0BF7B0EC}"
+      DTS:EvaluateAsExpression="True"
+      DTS:Expression="&quot;SELECT m.FishNo AS LegacyVisitNo, CAST(CONVERT(char(64), HASHBYTES('SHA2_256', CONCAT('&quot; + @[User::HashSalt] + &quot;', '|', m.PRV_Code)), 2) AS nchar(16)) AS PatientHash, p.Sex AS LegacySex, m.Age, m.AgeKind, CAST(m.[Date] AS nvarchar(10)) AS VisitDateJ, CAST(m.[Time] AS nvarchar(8)) AS VisitTime, CAST(m.AnsDate AS nvarchar(10)) AS AnswerDateJ, CAST(m.AnsTime AS nvarchar(8)) AS AnswerTime, m.Bime_ID AS LegacyPayerId, m.Cancel AS Cancelled, m.PregnancyWeek FROM dbo.MRJ m LEFT JOIN dbo.PRV p ON p.Code = m.PRV_Code WHERE m.FishNo &gt; &quot; + (DT_WSTR, 12) @[User::FromVisitNo]"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="SqlVisits">
+      <DTS:VariableValue
+        DTS:DataType="8">SELECT m.FishNo AS LegacyVisitNo, CAST(CONVERT(char(64), HASHBYTES('SHA2_256', CONCAT('', '|', m.PRV_Code)), 2) AS nchar(16)) AS PatientHash, p.Sex AS LegacySex, m.Age, m.AgeKind, CAST(m.[Date] AS nvarchar(10)) AS VisitDateJ, CAST(m.[Time] AS nvarchar(8)) AS VisitTime, CAST(m.AnsDate AS nvarchar(10)) AS AnswerDateJ, CAST(m.AnsTime AS nvarchar(8)) AS AnswerTime, m.Bime_ID AS LegacyPayerId, m.Cancel AS Cancelled, m.PregnancyWeek FROM dbo.MRJ m LEFT JOIN dbo.PRV p ON p.Code = m.PRV_Code WHERE m.FishNo &gt; 0</DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\DFT Extract legacy"
+      DTS:CreationName="Microsoft.Pipeline"
+      DTS:Description="Legacy rows into etl.stg_* (truncated by SQL Start run)."
+      DTS:DTSID="{4BEE83F0-A9C9-4B14-B81D-2092C6FF35C8}"
+      DTS:ExecutableType="Microsoft.Pipeline"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="DFT Extract legacy"
+      DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline
+          version="1">
+          <components>
+            <component
+              refId="Package\DFT Extract legacy\DC Payers to Unicode"
+              componentClassID="Microsoft.DataConvert"
+              contactInfo="Data Conversion;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
+              description="Data Conversion"
+              name="DC Payers to Unicode"
+              usesDispositions="true">
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\DC Payers to Unicode.Inputs[Data Conversion Input]"
+                  name="Data Conversion Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DC Payers to Unicode.Inputs[Data Conversion Input].Columns[NameRaw]"
+                      cachedCodepage="1256"
+                      cachedDataType="str"
+                      cachedLength="200"
+                      cachedName="NameRaw"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[NameRaw]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Output]"
+                  exclusionGroup="1"
+                  name="Data Conversion Output"
+                  synchronousInputId="Package\DFT Extract legacy\DC Payers to Unicode.Inputs[Data Conversion Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Output].Columns[PayerName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="200"
+                      lineageId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Output].Columns[PayerName]"
+                      name="PayerName"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[NameRaw]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output
+                  refId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="Data Conversion Error Output"
+                  synchronousInputId="Package\DFT Extract legacy\DC Payers to Unicode.Inputs[Data Conversion Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\DC Tests to Unicode"
+              componentClassID="Microsoft.DataConvert"
+              contactInfo="Data Conversion;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
+              description="Data Conversion"
+              name="DC Tests to Unicode"
+              usesDispositions="true">
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input]"
+                  name="Data Conversion Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input].Columns[CodeRaw]"
+                      cachedCodepage="1256"
+                      cachedDataType="str"
+                      cachedLength="12"
+                      cachedName="CodeRaw"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[CodeRaw]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input].Columns[NameRaw]"
+                      cachedCodepage="1256"
+                      cachedDataType="str"
+                      cachedLength="50"
+                      cachedName="NameRaw"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[NameRaw]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input].Columns[UnitRaw]"
+                      cachedCodepage="1256"
+                      cachedDataType="str"
+                      cachedLength="15"
+                      cachedName="UnitRaw"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[UnitRaw]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output]"
+                  exclusionGroup="1"
+                  name="Data Conversion Output"
+                  synchronousInputId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyCode]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="12"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyCode]"
+                      name="LegacyCode"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[CodeRaw]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="50"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyName]"
+                      name="LegacyName"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[NameRaw]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyUnit]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="15"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyUnit]"
+                      name="LegacyUnit"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[UnitRaw]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output
+                  refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="Data Conversion Error Output"
+                  synchronousInputId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\DST stg_Payer"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+              description="OLE DB Destination"
+              name="DST stg_Payer"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset">[etl].[stg_Payer]</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                  name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                  name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\DST stg_Payer.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[LabFlow]"
+                  connectionManagerRefId="Package.ConnectionManagers[LabFlow]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input]"
+                  errorOrTruncationOperation="Insert"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input].Columns[LegacyPayerId]"
+                      cachedDataType="i2"
+                      cachedName="LegacyPayerId"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input].ExternalColumns[LegacyPayerId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[LegacyPayerId]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input].Columns[PayerName]"
+                      cachedDataType="wstr"
+                      cachedLength="200"
+                      cachedName="PayerName"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input].ExternalColumns[PayerName]"
+                      lineageId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Output].Columns[PayerName]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input].ExternalColumns[LegacyPayerId]"
+                      dataType="i2"
+                      name="LegacyPayerId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input].ExternalColumns[PayerName]"
+                      dataType="wstr"
+                      length="200"
+                      name="PayerName" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\DST stg_Payer.Outputs[OLE DB Destination Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="OLE DB Destination Error Output"
+                  synchronousInputId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Payer.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Payer.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Payer.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Payer.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\DST stg_Result"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+              description="OLE DB Destination"
+              name="DST stg_Result"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset">[etl].[stg_Result]</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                  name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                  name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\DST stg_Result.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[LabFlow]"
+                  connectionManagerRefId="Package.ConnectionManagers[LabFlow]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input]"
+                  errorOrTruncationOperation="Insert"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[LegacyVisitNo]"
+                      cachedDataType="i8"
+                      cachedName="LegacyVisitNo"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[LegacyVisitNo]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyVisitNo]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[LegacyAzId]"
+                      cachedDataType="i2"
+                      cachedName="LegacyAzId"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[LegacyAzId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyAzId]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[LegacyChildAzId]"
+                      cachedDataType="i2"
+                      cachedName="LegacyChildAzId"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[LegacyChildAzId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyChildAzId]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[RowNo]"
+                      cachedDataType="ui1"
+                      cachedName="RowNo"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[RowNo]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[RowNo]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[RowNo2]"
+                      cachedDataType="i2"
+                      cachedName="RowNo2"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[RowNo2]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[RowNo2]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[Answer]"
+                      cachedDataType="wstr"
+                      cachedLength="250"
+                      cachedName="Answer"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[Answer]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[Answer]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[Unit]"
+                      cachedDataType="wstr"
+                      cachedLength="15"
+                      cachedName="Unit"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[Unit]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[Unit]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[NormalRange]"
+                      cachedDataType="wstr"
+                      cachedLength="200"
+                      cachedName="NormalRange"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[NormalRange]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[NormalRange]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[OutOfRange]"
+                      cachedDataType="ui1"
+                      cachedName="OutOfRange"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[OutOfRange]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[OutOfRange]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[OutOfCritical]"
+                      cachedDataType="ui1"
+                      cachedName="OutOfCritical"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[OutOfCritical]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[OutOfCritical]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].Columns[NoAnswer]"
+                      cachedDataType="wstr"
+                      cachedLength="1"
+                      cachedName="NoAnswer"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[NoAnswer]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[NoAnswer]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[LegacyVisitNo]"
+                      dataType="i8"
+                      name="LegacyVisitNo" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[LegacyAzId]"
+                      dataType="i2"
+                      name="LegacyAzId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[LegacyChildAzId]"
+                      dataType="i2"
+                      name="LegacyChildAzId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[RowNo]"
+                      dataType="ui1"
+                      name="RowNo" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[RowNo2]"
+                      dataType="i2"
+                      name="RowNo2" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[Answer]"
+                      dataType="wstr"
+                      length="250"
+                      name="Answer" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[Unit]"
+                      dataType="wstr"
+                      length="15"
+                      name="Unit" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[NormalRange]"
+                      dataType="wstr"
+                      length="200"
+                      name="NormalRange" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[OutOfRange]"
+                      dataType="ui1"
+                      name="OutOfRange" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[OutOfCritical]"
+                      dataType="ui1"
+                      name="OutOfCritical" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input].ExternalColumns[NoAnswer]"
+                      dataType="wstr"
+                      length="1"
+                      name="NoAnswer" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\DST stg_Result.Outputs[OLE DB Destination Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="OLE DB Destination Error Output"
+                  synchronousInputId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Result.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Result.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Result.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\DST stg_Test"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+              description="OLE DB Destination"
+              name="DST stg_Test"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset">[etl].[stg_Test]</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                  name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                  name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\DST stg_Test.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[LabFlow]"
+                  connectionManagerRefId="Package.ConnectionManagers[LabFlow]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input]"
+                  errorOrTruncationOperation="Insert"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].Columns[LegacyAzId]"
+                      cachedDataType="i4"
+                      cachedName="LegacyAzId"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyAzId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[LegacyAzId]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].Columns[Section]"
+                      cachedDataType="ui1"
+                      cachedName="Section"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[Section]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[Section]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].Columns[LegacyCode]"
+                      cachedDataType="wstr"
+                      cachedLength="12"
+                      cachedName="LegacyCode"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyCode]"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyCode]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].Columns[LegacyName]"
+                      cachedDataType="wstr"
+                      cachedLength="50"
+                      cachedName="LegacyName"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyName]"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyName]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].Columns[LegacyUnit]"
+                      cachedDataType="wstr"
+                      cachedLength="15"
+                      cachedName="LegacyUnit"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyUnit]"
+                      lineageId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output].Columns[LegacyUnit]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyAzId]"
+                      dataType="i4"
+                      name="LegacyAzId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyCode]"
+                      dataType="wstr"
+                      length="12"
+                      name="LegacyCode" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyName]"
+                      dataType="wstr"
+                      length="50"
+                      name="LegacyName" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[LegacyUnit]"
+                      dataType="wstr"
+                      length="15"
+                      name="LegacyUnit" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input].ExternalColumns[Section]"
+                      dataType="ui1"
+                      name="Section" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\DST stg_Test.Outputs[OLE DB Destination Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="OLE DB Destination Error Output"
+                  synchronousInputId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Test.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Test.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Test.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\DST stg_Visit"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+              description="OLE DB Destination"
+              name="DST stg_Visit"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset">[etl].[stg_Visit]</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                  name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                  name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\DST stg_Visit.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[LabFlow]"
+                  connectionManagerRefId="Package.ConnectionManagers[LabFlow]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input]"
+                  errorOrTruncationOperation="Insert"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[LegacyVisitNo]"
+                      cachedDataType="i8"
+                      cachedName="LegacyVisitNo"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[LegacyVisitNo]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacyVisitNo]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[PatientHash]"
+                      cachedDataType="wstr"
+                      cachedLength="16"
+                      cachedName="PatientHash"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[PatientHash]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[PatientHash]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[LegacySex]"
+                      cachedDataType="ui1"
+                      cachedName="LegacySex"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[LegacySex]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacySex]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[Age]"
+                      cachedDataType="ui1"
+                      cachedName="Age"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[Age]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[Age]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[AgeKind]"
+                      cachedDataType="ui1"
+                      cachedName="AgeKind"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[AgeKind]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AgeKind]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[VisitDateJ]"
+                      cachedDataType="wstr"
+                      cachedLength="10"
+                      cachedName="VisitDateJ"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[VisitDateJ]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[VisitDateJ]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[VisitTime]"
+                      cachedDataType="wstr"
+                      cachedLength="8"
+                      cachedName="VisitTime"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[VisitTime]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[VisitTime]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[AnswerDateJ]"
+                      cachedDataType="wstr"
+                      cachedLength="10"
+                      cachedName="AnswerDateJ"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[AnswerDateJ]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AnswerDateJ]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[AnswerTime]"
+                      cachedDataType="wstr"
+                      cachedLength="8"
+                      cachedName="AnswerTime"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[AnswerTime]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AnswerTime]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[LegacyPayerId]"
+                      cachedDataType="i2"
+                      cachedName="LegacyPayerId"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[LegacyPayerId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacyPayerId]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[Cancelled]"
+                      cachedDataType="bool"
+                      cachedName="Cancelled"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[Cancelled]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[Cancelled]" />
+                    <inputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].Columns[PregnancyWeek]"
+                      cachedDataType="ui1"
+                      cachedName="PregnancyWeek"
+                      externalMetadataColumnId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[PregnancyWeek]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[PregnancyWeek]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[LegacyVisitNo]"
+                      dataType="i8"
+                      name="LegacyVisitNo" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[PatientHash]"
+                      dataType="wstr"
+                      length="16"
+                      name="PatientHash" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[LegacySex]"
+                      dataType="ui1"
+                      name="LegacySex" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[Age]"
+                      dataType="ui1"
+                      name="Age" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[AgeKind]"
+                      dataType="ui1"
+                      name="AgeKind" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[VisitDateJ]"
+                      dataType="wstr"
+                      length="10"
+                      name="VisitDateJ" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[VisitTime]"
+                      dataType="wstr"
+                      length="8"
+                      name="VisitTime" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[AnswerDateJ]"
+                      dataType="wstr"
+                      length="10"
+                      name="AnswerDateJ" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[AnswerTime]"
+                      dataType="wstr"
+                      length="8"
+                      name="AnswerTime" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[LegacyPayerId]"
+                      dataType="i2"
+                      name="LegacyPayerId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[Cancelled]"
+                      dataType="bool"
+                      name="Cancelled" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input].ExternalColumns[PregnancyWeek]"
+                      dataType="ui1"
+                      name="PregnancyWeek" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\DST stg_Visit.Outputs[OLE DB Destination Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="OLE DB Destination Error Output"
+                  synchronousInputId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Visit.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\DST stg_Visit.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\DST stg_Visit.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\RC Results"
+              componentClassID="Microsoft.RowCount"
+              contactInfo="Row Count;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
+              description="Counts rows as they pass through a data flow. For example, use the number of rows processed to determine whether or not to perform cleanup operations, or update text in an e-mail message to communicate processing status."
+              name="RC Results">
+              <properties>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable to hold the row count."
+                  name="VariableName">User::RowsResults</property>
+              </properties>
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\RC Results.Inputs[Row Count Input 1]"
+                  hasSideEffects="true"
+                  name="Row Count Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\RC Results.Outputs[Row Count Output 1]"
+                  name="Row Count Output 1"
+                  synchronousInputId="Package\DFT Extract legacy\RC Results.Inputs[Row Count Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\RC Visits"
+              componentClassID="Microsoft.RowCount"
+              contactInfo="Row Count;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
+              description="Counts rows as they pass through a data flow. For example, use the number of rows processed to determine whether or not to perform cleanup operations, or update text in an e-mail message to communicate processing status."
+              name="RC Visits">
+              <properties>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable to hold the row count."
+                  name="VariableName">User::RowsVisits</property>
+              </properties>
+              <inputs>
+                <input
+                  refId="Package\DFT Extract legacy\RC Visits.Inputs[Row Count Input 1]"
+                  hasSideEffects="true"
+                  name="Row Count Input 1">
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\RC Visits.Outputs[Row Count Output 1]"
+                  name="Row Count Output 1"
+                  synchronousInputId="Package\DFT Extract legacy\RC Visits.Inputs[Row Count Input 1]">
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\SRC Legacy payers"
+              componentClassID="Microsoft.OLEDBSource"
+              contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+              description="OLE DB Source"
+              name="SRC Legacy payers"
+              usesDispositions="true"
+              version="7">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset"></property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">SELECT ID AS LegacyPayerId, Name AS NameRaw FROM dbo.Bime</property>
+                <property
+                  dataType="System.String"
+                  description="The variable that contains the SQL command to be executed."
+                  name="SqlCommandVariable"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">2</property>
+                <property
+                  dataType="System.String"
+                  description="The mappings between the parameters in the SQL command and variables."
+                  name="ParameterMapping"></property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\SRC Legacy payers.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Legacy]"
+                  connectionManagerRefId="Package.ConnectionManagers[Legacy]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output]"
+                  name="OLE DB Source Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[LegacyPayerId]"
+                      dataType="i2"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].ExternalColumns[LegacyPayerId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[LegacyPayerId]"
+                      name="LegacyPayerId"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[NameRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].ExternalColumns[NameRaw]"
+                      length="200"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].Columns[NameRaw]"
+                      name="NameRaw"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].ExternalColumns[LegacyPayerId]"
+                      dataType="i2"
+                      name="LegacyPayerId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output].ExternalColumns[NameRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="200"
+                      name="NameRaw" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output]"
+                  isErrorOut="true"
+                  name="OLE DB Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[LegacyPayerId]"
+                      dataType="i2"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[LegacyPayerId]"
+                      name="LegacyPayerId" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[NameRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="200"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[NameRaw]"
+                      name="NameRaw" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\SRC Legacy results"
+              componentClassID="Microsoft.OLEDBSource"
+              contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+              description="OLE DB Source"
+              name="SRC Legacy results"
+              usesDispositions="true"
+              version="7">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset"></property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">SELECT r.FishNo AS LegacyVisitNo, r.Az_ID AS LegacyAzId, r.ChildAz_ID AS LegacyChildAzId, r.[Row] AS RowNo, r.Row2 AS RowNo2, CAST(r.Answer1 AS nvarchar(250)) AS Answer, CAST(r.Unit AS nvarchar(15)) AS Unit, CAST(r.NormalRange AS nvarchar(200)) AS NormalRange, r.OutOfNormalRange AS OutOfRange, r.OutOfCriticalNormalRange AS OutOfCritical, CAST(r.NoAnswer AS nvarchar(1)) AS NoAnswer FROM dbo.MRJAZ r WHERE r.FishNo &gt; 0</property>
+                <property
+                  dataType="System.String"
+                  description="The variable that contains the SQL command to be executed."
+                  name="SqlCommandVariable">User::SqlResults</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.String"
+                  description="The mappings between the parameters in the SQL command and variables."
+                  name="ParameterMapping"></property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\SRC Legacy results.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Legacy]"
+                  connectionManagerRefId="Package.ConnectionManagers[Legacy]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output]"
+                  name="OLE DB Source Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyVisitNo]"
+                      dataType="i8"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[LegacyVisitNo]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyVisitNo]"
+                      name="LegacyVisitNo"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyAzId]"
+                      dataType="i2"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[LegacyAzId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyAzId]"
+                      name="LegacyAzId"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyChildAzId]"
+                      dataType="i2"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[LegacyChildAzId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[LegacyChildAzId]"
+                      name="LegacyChildAzId"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[RowNo]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[RowNo]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[RowNo]"
+                      name="RowNo"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[RowNo2]"
+                      dataType="i2"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[RowNo2]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[RowNo2]"
+                      name="RowNo2"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[Answer]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[Answer]"
+                      length="250"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[Answer]"
+                      name="Answer"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[Unit]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[Unit]"
+                      length="15"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[Unit]"
+                      name="Unit"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[NormalRange]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[NormalRange]"
+                      length="200"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[NormalRange]"
+                      name="NormalRange"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[OutOfRange]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[OutOfRange]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[OutOfRange]"
+                      name="OutOfRange"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[OutOfCritical]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[OutOfCritical]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[OutOfCritical]"
+                      name="OutOfCritical"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[NoAnswer]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[NoAnswer]"
+                      length="1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].Columns[NoAnswer]"
+                      name="NoAnswer"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[LegacyVisitNo]"
+                      dataType="i8"
+                      name="LegacyVisitNo" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[LegacyAzId]"
+                      dataType="i2"
+                      name="LegacyAzId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[LegacyChildAzId]"
+                      dataType="i2"
+                      name="LegacyChildAzId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[RowNo]"
+                      dataType="ui1"
+                      name="RowNo" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[RowNo2]"
+                      dataType="i2"
+                      name="RowNo2" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[Answer]"
+                      dataType="wstr"
+                      length="250"
+                      name="Answer" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[Unit]"
+                      dataType="wstr"
+                      length="15"
+                      name="Unit" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[NormalRange]"
+                      dataType="wstr"
+                      length="200"
+                      name="NormalRange" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[OutOfRange]"
+                      dataType="ui1"
+                      name="OutOfRange" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[OutOfCritical]"
+                      dataType="ui1"
+                      name="OutOfCritical" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output].ExternalColumns[NoAnswer]"
+                      dataType="wstr"
+                      length="1"
+                      name="NoAnswer" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output]"
+                  isErrorOut="true"
+                  name="OLE DB Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[LegacyVisitNo]"
+                      dataType="i8"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[LegacyVisitNo]"
+                      name="LegacyVisitNo" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[LegacyAzId]"
+                      dataType="i2"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[LegacyAzId]"
+                      name="LegacyAzId" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[LegacyChildAzId]"
+                      dataType="i2"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[LegacyChildAzId]"
+                      name="LegacyChildAzId" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[RowNo]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[RowNo]"
+                      name="RowNo" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[RowNo2]"
+                      dataType="i2"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[RowNo2]"
+                      name="RowNo2" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[Answer]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[Answer]"
+                      name="Answer" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[Unit]"
+                      dataType="wstr"
+                      length="15"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[Unit]"
+                      name="Unit" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[NormalRange]"
+                      dataType="wstr"
+                      length="200"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[NormalRange]"
+                      name="NormalRange" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[OutOfRange]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[OutOfRange]"
+                      name="OutOfRange" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[OutOfCritical]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[OutOfCritical]"
+                      name="OutOfCritical" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[NoAnswer]"
+                      dataType="wstr"
+                      length="1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[NoAnswer]"
+                      name="NoAnswer" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\SRC Legacy tests"
+              componentClassID="Microsoft.OLEDBSource"
+              contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+              description="OLE DB Source"
+              name="SRC Legacy tests"
+              usesDispositions="true"
+              version="7">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset"></property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">SELECT ID AS LegacyAzId, InternationalCode AS CodeRaw, Name AS NameRaw, Unit AS UnitRaw, Section FROM dbo.AzDefine</property>
+                <property
+                  dataType="System.String"
+                  description="The variable that contains the SQL command to be executed."
+                  name="SqlCommandVariable"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">2</property>
+                <property
+                  dataType="System.String"
+                  description="The mappings between the parameters in the SQL command and variables."
+                  name="ParameterMapping"></property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\SRC Legacy tests.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Legacy]"
+                  connectionManagerRefId="Package.ConnectionManagers[Legacy]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output]"
+                  name="OLE DB Source Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[LegacyAzId]"
+                      dataType="i4"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[LegacyAzId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[LegacyAzId]"
+                      name="LegacyAzId"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[CodeRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[CodeRaw]"
+                      length="12"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[CodeRaw]"
+                      name="CodeRaw"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[NameRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[NameRaw]"
+                      length="50"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[NameRaw]"
+                      name="NameRaw"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[UnitRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[UnitRaw]"
+                      length="15"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[UnitRaw]"
+                      name="UnitRaw"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[Section]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[Section]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].Columns[Section]"
+                      name="Section"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[LegacyAzId]"
+                      dataType="i4"
+                      name="LegacyAzId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[CodeRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="12"
+                      name="CodeRaw" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[NameRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="50"
+                      name="NameRaw" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[UnitRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="15"
+                      name="UnitRaw" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output].ExternalColumns[Section]"
+                      dataType="ui1"
+                      name="Section" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output]"
+                  isErrorOut="true"
+                  name="OLE DB Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[LegacyAzId]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[LegacyAzId]"
+                      name="LegacyAzId" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[CodeRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="12"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[CodeRaw]"
+                      name="CodeRaw" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[NameRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="50"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[NameRaw]"
+                      name="NameRaw" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[UnitRaw]"
+                      codePage="1256"
+                      dataType="str"
+                      length="15"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[UnitRaw]"
+                      name="UnitRaw" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[Section]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[Section]"
+                      name="Section" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified)"
+              componentClassID="Microsoft.OLEDBSource"
+              contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+              description="OLE DB Source"
+              name="SRC Legacy visits (de-identified)"
+              usesDispositions="true"
+              version="7">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset"></property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">SELECT m.FishNo AS LegacyVisitNo, CAST(CONVERT(char(64), HASHBYTES('SHA2_256', CONCAT('', '|', m.PRV_Code)), 2) AS nchar(16)) AS PatientHash, p.Sex AS LegacySex, m.Age, m.AgeKind, CAST(m.[Date] AS nvarchar(10)) AS VisitDateJ, CAST(m.[Time] AS nvarchar(8)) AS VisitTime, CAST(m.AnsDate AS nvarchar(10)) AS AnswerDateJ, CAST(m.AnsTime AS nvarchar(8)) AS AnswerTime, m.Bime_ID AS LegacyPayerId, m.Cancel AS Cancelled, m.PregnancyWeek FROM dbo.MRJ m LEFT JOIN dbo.PRV p ON p.Code = m.PRV_Code WHERE m.FishNo &gt; 0</property>
+                <property
+                  dataType="System.String"
+                  description="The variable that contains the SQL command to be executed."
+                  name="SqlCommandVariable">User::SqlVisits</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.String"
+                  description="The mappings between the parameters in the SQL command and variables."
+                  name="ParameterMapping"></property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Legacy]"
+                  connectionManagerRefId="Package.ConnectionManagers[Legacy]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output]"
+                  name="OLE DB Source Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacyVisitNo]"
+                      dataType="i8"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[LegacyVisitNo]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacyVisitNo]"
+                      name="LegacyVisitNo"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[PatientHash]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[PatientHash]"
+                      length="16"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[PatientHash]"
+                      name="PatientHash"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacySex]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[LegacySex]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacySex]"
+                      name="LegacySex"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[Age]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[Age]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[Age]"
+                      name="Age"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AgeKind]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[AgeKind]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AgeKind]"
+                      name="AgeKind"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[VisitDateJ]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[VisitDateJ]"
+                      length="10"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[VisitDateJ]"
+                      name="VisitDateJ"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[VisitTime]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[VisitTime]"
+                      length="8"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[VisitTime]"
+                      name="VisitTime"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AnswerDateJ]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[AnswerDateJ]"
+                      length="10"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AnswerDateJ]"
+                      name="AnswerDateJ"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AnswerTime]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[AnswerTime]"
+                      length="8"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[AnswerTime]"
+                      name="AnswerTime"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacyPayerId]"
+                      dataType="i2"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[LegacyPayerId]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[LegacyPayerId]"
+                      name="LegacyPayerId"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[Cancelled]"
+                      dataType="bool"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[Cancelled]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[Cancelled]"
+                      name="Cancelled"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[PregnancyWeek]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[PregnancyWeek]"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].Columns[PregnancyWeek]"
+                      name="PregnancyWeek"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[LegacyVisitNo]"
+                      dataType="i8"
+                      name="LegacyVisitNo" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[PatientHash]"
+                      dataType="wstr"
+                      length="16"
+                      name="PatientHash" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[LegacySex]"
+                      dataType="ui1"
+                      name="LegacySex" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[Age]"
+                      dataType="ui1"
+                      name="Age" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[AgeKind]"
+                      dataType="ui1"
+                      name="AgeKind" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[VisitDateJ]"
+                      dataType="wstr"
+                      length="10"
+                      name="VisitDateJ" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[VisitTime]"
+                      dataType="wstr"
+                      length="8"
+                      name="VisitTime" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[AnswerDateJ]"
+                      dataType="wstr"
+                      length="10"
+                      name="AnswerDateJ" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[AnswerTime]"
+                      dataType="wstr"
+                      length="8"
+                      name="AnswerTime" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[LegacyPayerId]"
+                      dataType="i2"
+                      name="LegacyPayerId" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[Cancelled]"
+                      dataType="bool"
+                      name="Cancelled" />
+                    <externalMetadataColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output].ExternalColumns[PregnancyWeek]"
+                      dataType="ui1"
+                      name="PregnancyWeek" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output]"
+                  isErrorOut="true"
+                  name="OLE DB Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[LegacyVisitNo]"
+                      dataType="i8"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[LegacyVisitNo]"
+                      name="LegacyVisitNo" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[PatientHash]"
+                      dataType="wstr"
+                      length="16"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[PatientHash]"
+                      name="PatientHash" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[LegacySex]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[LegacySex]"
+                      name="LegacySex" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[Age]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[Age]"
+                      name="Age" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[AgeKind]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[AgeKind]"
+                      name="AgeKind" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[VisitDateJ]"
+                      dataType="wstr"
+                      length="10"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[VisitDateJ]"
+                      name="VisitDateJ" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[VisitTime]"
+                      dataType="wstr"
+                      length="8"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[VisitTime]"
+                      name="VisitTime" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[AnswerDateJ]"
+                      dataType="wstr"
+                      length="10"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[AnswerDateJ]"
+                      name="AnswerDateJ" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[AnswerTime]"
+                      dataType="wstr"
+                      length="8"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[AnswerTime]"
+                      name="AnswerTime" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[LegacyPayerId]"
+                      dataType="i2"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[LegacyPayerId]"
+                      name="LegacyPayerId" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[Cancelled]"
+                      dataType="bool"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[Cancelled]"
+                      name="Cancelled" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[PregnancyWeek]"
+                      dataType="ui1"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[PregnancyWeek]"
+                      name="PregnancyWeek" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path
+              refId="Package\DFT Extract legacy.Paths[Data Conversion Output]"
+              endId="Package\DFT Extract legacy\DST stg_Test.Inputs[OLE DB Destination Input]"
+              name="Data Conversion Output"
+              startId="Package\DFT Extract legacy\DC Tests to Unicode.Outputs[Data Conversion Output]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[Data Conversion Output1]"
+              endId="Package\DFT Extract legacy\DST stg_Payer.Inputs[OLE DB Destination Input]"
+              name="Data Conversion Output"
+              startId="Package\DFT Extract legacy\DC Payers to Unicode.Outputs[Data Conversion Output]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[OLE DB Source Output2]"
+              endId="Package\DFT Extract legacy\RC Visits.Inputs[Row Count Input 1]"
+              name="OLE DB Source Output"
+              startId="Package\DFT Extract legacy\SRC Legacy visits (de-identified).Outputs[OLE DB Source Output]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[OLE DB Source Output3]"
+              endId="Package\DFT Extract legacy\RC Results.Inputs[Row Count Input 1]"
+              name="OLE DB Source Output"
+              startId="Package\DFT Extract legacy\SRC Legacy results.Outputs[OLE DB Source Output]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[OLE DB Source Output1]"
+              endId="Package\DFT Extract legacy\DC Payers to Unicode.Inputs[Data Conversion Input]"
+              name="OLE DB Source Output"
+              startId="Package\DFT Extract legacy\SRC Legacy payers.Outputs[OLE DB Source Output]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[OLE DB Source Output]"
+              endId="Package\DFT Extract legacy\DC Tests to Unicode.Inputs[Data Conversion Input]"
+              name="OLE DB Source Output"
+              startId="Package\DFT Extract legacy\SRC Legacy tests.Outputs[OLE DB Source Output]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[Row Count Output 11]"
+              endId="Package\DFT Extract legacy\DST stg_Result.Inputs[OLE DB Destination Input]"
+              name="Row Count Output 1"
+              startId="Package\DFT Extract legacy\RC Results.Outputs[Row Count Output 1]" />
+            <path
+              refId="Package\DFT Extract legacy.Paths[Row Count Output 1]"
+              endId="Package\DFT Extract legacy\DST stg_Visit.Inputs[OLE DB Destination Input]"
+              name="Row Count Output 1"
+              startId="Package\DFT Extract legacy\RC Visits.Outputs[Row Count Output 1]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\SQL Start run"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:DTSID="{B21D0067-61D6-4F19-87FE-53FA7CFEB292}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="SQL Start run"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:PropertyExpression
+        DTS:Name="SqlStatementSource">"EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = " + (DT_WSTR, 10) @[$Package::LookbackVisits]</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+          SQLTask:SqlStatementSource="EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = 200"
+          SQLTask:ResultType="ResultSetType_SingleRow" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+          <SQLTask:ResultBinding
+            SQLTask:ResultName="RunId"
+            SQLTask:DtsVariableName="User::RunId" />
+          <SQLTask:ResultBinding
+            SQLTask:ResultName="HashSalt"
+            SQLTask:DtsVariableName="User::HashSalt" />
+          <SQLTask:ResultBinding
+            SQLTask:ResultName="FromVisitNo"
+            SQLTask:DtsVariableName="User::FromVisitNo" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\SQL Transform and load"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Map to LOINC/SI, shift dates, flag data-quality issues, MERGE into dw."
+      DTS:DTSID="{05E93C71-0C50-4B3E-9E18-99CC5347FE4E}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="SQL Transform and load"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:PropertyExpression
+        DTS:Name="SqlStatementSource">"EXEC etl.usp_TransformLoad @RunId = " + (DT_WSTR, 12) @[User::RunId]</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+          SQLTask:SqlStatementSource="EXEC etl.usp_TransformLoad @RunId = 0" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[{25BF9AAB-28A3-4147-85AD-CFA80A68F8C4\}]"
+      DTS:CreationName=""
+      DTS:DTSID="{25BF9AAB-28A3-4147-85AD-CFA80A68F8C4}"
+      DTS:From="Package\SQL Start run"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="{25BF9AAB-28A3-4147-85AD-CFA80A68F8C4}"
+      DTS:To="Package\DFT Extract legacy" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[{C7A8296D-FA87-424B-9F65-EC661724AEDE\}]"
+      DTS:CreationName=""
+      DTS:DTSID="{C7A8296D-FA87-424B-9F65-EC661724AEDE}"
+      DTS:From="Package\DFT Extract legacy"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="{C7A8296D-FA87-424B-9F65-EC661724AEDE}"
+      DTS:To="Package\SQL Transform and load" />
+  </DTS:PrecedenceConstraints>
+  <DTS:EventHandlers>
+    <DTS:EventHandler
+      DTS:refId="Package.EventHandlers[OnError]"
+      DTS:CreationName="OnError"
+      DTS:DTSID="{300C5AA2-D91C-44DB-B29A-CFBFFAACA920}"
+      DTS:EventID="4"
+      DTS:EventName="OnError"
+      DTS:LocaleID="-1">
+      <DTS:Variables>
+        <DTS:Variable
+          DTS:CreationName=""
+          DTS:Description="The propagate property of the event"
+          DTS:DTSID="{630106DD-B454-40D8-9B77-B3214E2459BB}"
+          DTS:IncludeInDebugDump="6789"
+          DTS:Namespace="System"
+          DTS:ObjectName="Propagate">
+          <DTS:VariableValue
+            DTS:DataType="11">-1</DTS:VariableValue>
+        </DTS:Variable>
+      </DTS:Variables>
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package.EventHandlers[OnError]\SQL Fail run"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:DTSID="{8B9B7B15-668A-4C48-AF2B-8BD555987C0E}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="SQL Fail run">
+          <DTS:Variables />
+          <DTS:PropertyExpression
+            DTS:Name="SqlStatementSource">"EXEC etl.usp_FailRun @RunId = " + (DT_WSTR, 12) @[User::RunId] + ", @Message = N'" + REPLACE(LEFT(@[System::SourceName] + ": " + @[System::ErrorDescription], 1800), "'", "''") + "'"</DTS:PropertyExpression>
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+              SQLTask:SqlStatementSource="EXEC etl.usp_FailRun @RunId = 0, @Message = N': '" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+    </DTS:EventHandler>
+  </DTS:EventHandlers>
+</DTS:Executable>

@@ -14,7 +14,8 @@ for background work (email outbox, AI interpretation, PDF rendering).
 - [x] React front end: patient booking and front desk (`web/`)
 - [ ] Specimen collection, resulting and verification screens
 - [ ] Patient portal and PDF report
-- [ ] ETL from the legacy `Laboratory` database
+- [x] ETL from the legacy `Laboratory` database: SSIS package → de-identified staging → `dw` star schema (`etl/`)
+- [ ] Azure Data Factory version of the ETL, Power BI report on `dw`
 - [ ] Azure Functions (notifications, AI interpretation)
 - [ ] HL7 v2 ORU export (OLIS simulation)
 

@@ -28,7 +28,9 @@ if ($Recreate) {
     Invoke-Sql 'master' $null "IF DB_ID(N'$Database') IS NOT NULL BEGIN ALTER DATABASE [$Database] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$Database]; END"
 }
 
-Invoke-Sql 'master' (Join-Path $here '001_database.sql') $null
+# 001 names the database through a sqlcmd variable (the only script that needs it).
+& sqlcmd -S $Server -E -d master -b -I -f 65001 -i (Join-Path $here '001_database.sql') -v "DatabaseName=$Database"
+if ($LASTEXITCODE -ne 0) { throw "sqlcmd failed (master): 001_database.sql" }
 
 $schemaExists = & sqlcmd -S $Server -E -d $Database -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.schemas WHERE name = 'lab'"
 if ($schemaExists.Trim() -eq '1') {
