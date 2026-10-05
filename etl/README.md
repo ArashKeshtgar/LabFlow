@@ -24,9 +24,11 @@ dbo.MRJAZ ────┘  (de-identified)   etl.stg_Result┘   (one transactio
 | **SQL Transform and load** | `etl.usp_TransformLoad`: Jalali → Gregorian, panel handling, LOINC/SI mapping, data-quality rules, `MERGE` into the dimensions and the fact, watermark update — all in one transaction. |
 | **OnError → SQL Fail run** | `etl.usp_FailRun` closes the run as Failed with the failing task and message. |
 
-Parameters (set per environment with `dtexec /Par`, SQL Agent or the SSIS catalog):
-`LegacyServer`, `LegacyDatabase`, `LabFlowServer`, `LabFlowDatabase`, `LookbackVisits`.
-Connections are built from them by expressions; nothing is hard-coded to this PC.
+Settings are package variables (set per environment with `dtexec /SET` or in the SQL Agent
+job step): `LegacyServer`, `LegacyDatabase`, `LabFlowServer`, `LabFlowDatabase`, `LookbackVisits`.
+Connections are built from them by expressions; nothing is hard-coded to this PC. (Variables,
+not project parameters, because the package runs from a file and `dtexec /Par` only reaches
+catalog-deployed packages.)
 
 The `.dtsx` is generated from [`builder/BuildPackage.cs`](builder/BuildPackage.cs) with the
 SSIS object model (`./build.ps1`), so the package is reviewable and reproducible as code;
@@ -57,7 +59,7 @@ Data-quality findings go to `etl.RejectRow`: **Rejected** (not loaded: unknown t
 missing, invalid date) or **Warning** (loaded, flagged: implausible age, answer date before
 the visit, no answer date, non-numeric answer for a numeric test).
 
-## Results on the legacy copy (T-SQL dry run of the same queries, 2026-10-03)
+## Results on the legacy copy (SSIS runs, 2026-10-04)
 
 | | |
 |---|---|
@@ -69,9 +71,23 @@ the visit, no answer date, non-numeric answer for a numeric test).
 | Warnings | 6 (2 implausible ages, 2 answer-before-visit, 1 missing answer date, 1 non-numeric) |
 | Tests mapped to LOINC/SI | 13 (881 results); 1,403 legacy tests still `Unmapped` |
 
-A second run is incremental and idempotent: it re-extracted only visits above 230 (high-water
-mark 430 minus the 200-visit look-back) — 199 visits, 4,665 rows — and inserted 0, updated 0,
-because `MERGE` only touches rows whose values changed.
+Run time: about 3 seconds. A second run is incremental and idempotent: it re-extracted only
+visits above 230 (high-water mark 430 minus the 200-visit look-back) — 199 visits, 4,665 rows —
+and inserted 0, updated 0, because `MERGE` only touches rows whose values changed. The same
+numbers came out of the nightly SQL Agent job running as `NT Service\SQLSERVERAGENT`.
+
+Persian payer names arrive intact (e.g. «بانک تجارت»): the legacy connection uses
+`Auto Translate=False` and the sources read varchar as code page 1256, so the Data Conversion
+gets real 1256 bytes instead of text already mangled into this machine's ANSI code page.
+
+Problems met on the way, kept here because they are the usual SSIS ones:
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Text was truncated or one or more characters had no match in the target code page` | the driver translated 1256 text to the client's code page (1252) | `Auto Translate=False` + `AlwaysUseDefaultCodePage`/`DefaultCodePage=1256` on the sources |
+| `Culture is not supported … 3072 (0x0c00)` only under SQL Agent | service accounts can have the custom default locale | package and tasks pinned to `LocaleID = 1033` |
+| `The Parameter option can only be specified with the ISServer option` | `/Par` is catalog-only | settings as package variables, `/SET` |
+| A failure inside *SQL Start run* left the run `Running` | the run id was never handed back | `etl.usp_FailRun @RunId = 0` closes the one Running run |
 
 ## Run it
 
@@ -87,8 +103,8 @@ SELECT * FROM LabFlow.dw.vw_MappingCoverage;                      -- how much is
 ```
 
 `dtexec` and SQL Agent need the **Integration Services** feature installed on the SQL Server
-instance (Developer/Standard and up). Without it the package still runs inside Visual Studio
-(open `LabFlowETL.dtsx`, Start). Schedule it nightly with
+instance (Developer/Standard and up); without it the package only runs inside Visual Studio.
+Schedule it nightly (02:00) with
 `sqlcmd -S . -E -i etl/agent_job.sql -v PackagePath="<full path to LabFlowETL.dtsx>"`, which also
 gives the Agent account only the rights it needs (read legacy, run `etl` procedures, load staging).
 

@@ -20,10 +20,15 @@ $ErrorActionPreference = 'Stop'
 $dtexec = "$env:ProgramFiles\Microsoft SQL Server\150\DTS\Binn\DTExec.exe"
 $package = Join-Path $PSScriptRoot 'LabFlowETL\LabFlowETL.dtsx'
 
+# The settings are package variables: dtexec's /Par only reaches parameters
+# of catalog-deployed packages, /SET reaches variables of a package file.
+function Set-Param([string]$name, $value) {
+    '/SET', "\Package.Variables[User::$name].Properties[Value];$value"
+}
 & $dtexec /F $package /Rep EW `
-    /Par "`$Package::LegacyServer;$LegacyServer" /Par "`$Package::LegacyDatabase;$LegacyDatabase" `
-    /Par "`$Package::LabFlowServer;$LabFlowServer" /Par "`$Package::LabFlowDatabase;$LabFlowDatabase" `
-    /Par "`$Package::LookbackVisits(Int32);$LookbackVisits"
+    (Set-Param LegacyServer $LegacyServer) (Set-Param LegacyDatabase $LegacyDatabase) `
+    (Set-Param LabFlowServer $LabFlowServer) (Set-Param LabFlowDatabase $LabFlowDatabase) `
+    (Set-Param LookbackVisits $LookbackVisits)
 $code = $LASTEXITCODE
 
 & sqlcmd -S $LabFlowServer -E -d $LabFlowDatabase -W -s ' | ' -Q "SET NOCOUNT ON; SELECT TOP (1) RunId, Status, DurationSec, VisitsExtracted, ResultsExtracted, ResultsInserted, ResultsUpdated, ResultsSkipped, ResultsRejected, Warnings, Message FROM etl.vw_RunHistory ORDER BY RunId DESC"

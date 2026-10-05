@@ -1,28 +1,28 @@
 <?xml version="1.0"?>
 <DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
   DTS:refId="Package"
-  DTS:CreationDate="10/3/2026 11:37:49 PM"
+  DTS:CreationDate="10/4/2026 8:06:52 PM"
   DTS:CreationName="Microsoft.Package"
   DTS:CreatorComputerName="ARASH-PC"
   DTS:CreatorName="ARASH-PC\akesh"
   DTS:Description="Legacy Laboratory database -&gt; de-identified staging -&gt; LabFlow reporting warehouse (dw)."
-  DTS:DTSID="{0FB27945-7799-483A-942C-6A7F7EF4B8D2}"
+  DTS:DTSID="{A099C04B-581D-4261-B012-32FD1656AE81}"
   DTS:ExecutableType="Microsoft.Package"
   DTS:LastModifiedProductVersion="15.0.2000.5"
-  DTS:LocaleID="3072"
+  DTS:LocaleID="1033"
   DTS:ObjectName="LabFlowETL"
   DTS:ProtectionLevel="0"
-  DTS:VersionGUID="{F5DF29E9-6DBA-4D77-9894-1B0D80F46EE7}">
+  DTS:VersionGUID="{C0CD1DF0-A630-4CB9-BD7D-94A969BDF415}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
     <DTS:ConnectionManager
       DTS:refId="Package.ConnectionManagers[LabFlow]"
       DTS:CreationName="OLEDB"
-      DTS:DTSID="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+      DTS:DTSID="{27C7D40E-FFCC-4BD5-8F9B-8718ED7D144F}"
       DTS:ObjectName="LabFlow">
       <DTS:PropertyExpression
-        DTS:Name="ConnectionString">"Data Source=" + @[$Package::LabFlowServer] + ";Initial Catalog=" + @[$Package::LabFlowDatabase] + ";Provider=MSOLEDBSQL;Integrated Security=SSPI;"</DTS:PropertyExpression>
+        DTS:Name="ConnectionString">"Data Source=" + @[User::LabFlowServer] + ";Initial Catalog=" + @[User::LabFlowDatabase] + ";Provider=MSOLEDBSQL;Integrated Security=SSPI;"</DTS:PropertyExpression>
       <DTS:ObjectData>
         <DTS:ConnectionManager
           DTS:ConnectionString="Data Source=.;Initial Catalog=LabFlow;Provider=MSOLEDBSQL;Integrated Security=SSPI;" />
@@ -31,68 +31,20 @@
     <DTS:ConnectionManager
       DTS:refId="Package.ConnectionManagers[Legacy]"
       DTS:CreationName="OLEDB"
-      DTS:DTSID="{BF73862E-570E-4641-9F19-6470B7BAF83C}"
+      DTS:DTSID="{EAA2DC57-225F-4C9D-9AC8-D3AF5BA5C9D3}"
       DTS:ObjectName="Legacy">
       <DTS:PropertyExpression
-        DTS:Name="ConnectionString">"Data Source=" + @[$Package::LegacyServer] + ";Initial Catalog=" + @[$Package::LegacyDatabase] + ";Provider=MSOLEDBSQL;Integrated Security=SSPI;"</DTS:PropertyExpression>
+        DTS:Name="ConnectionString">"Data Source=" + @[User::LegacyServer] + ";Initial Catalog=" + @[User::LegacyDatabase] + ";Provider=MSOLEDBSQL;Integrated Security=SSPI;Auto Translate=False;"</DTS:PropertyExpression>
       <DTS:ObjectData>
         <DTS:ConnectionManager
-          DTS:ConnectionString="Data Source=.;Initial Catalog=Laboratory;Provider=MSOLEDBSQL;Integrated Security=SSPI;" />
+          DTS:ConnectionString="Data Source=.;Initial Catalog=Laboratory;Provider=MSOLEDBSQL;Integrated Security=SSPI;Auto Translate=False;" />
       </DTS:ObjectData>
     </DTS:ConnectionManager>
   </DTS:ConnectionManagers>
-  <DTS:PackageParameters>
-    <DTS:PackageParameter
-      DTS:CreationName=""
-      DTS:DataType="8"
-      DTS:DTSID="{C36AE9F9-696C-407B-8CB9-77F8291F8B55}"
-      DTS:ObjectName="LabFlowDatabase">
-      <DTS:Property
-        DTS:DataType="8"
-        DTS:Name="ParameterValue">LabFlow</DTS:Property>
-    </DTS:PackageParameter>
-    <DTS:PackageParameter
-      DTS:CreationName=""
-      DTS:DataType="8"
-      DTS:DTSID="{826FBB84-8B1D-4B36-BEFA-14295F2CFF01}"
-      DTS:ObjectName="LabFlowServer">
-      <DTS:Property
-        DTS:DataType="8"
-        DTS:Name="ParameterValue">.</DTS:Property>
-    </DTS:PackageParameter>
-    <DTS:PackageParameter
-      DTS:CreationName=""
-      DTS:DataType="8"
-      DTS:DTSID="{2AD4221E-268C-47A7-A853-CED4E21351E8}"
-      DTS:ObjectName="LegacyDatabase">
-      <DTS:Property
-        DTS:DataType="8"
-        DTS:Name="ParameterValue">Laboratory</DTS:Property>
-    </DTS:PackageParameter>
-    <DTS:PackageParameter
-      DTS:CreationName=""
-      DTS:DataType="8"
-      DTS:DTSID="{A779AF0A-6961-4F6E-AAD2-E5FD623A63EB}"
-      DTS:ObjectName="LegacyServer">
-      <DTS:Property
-        DTS:DataType="8"
-        DTS:Name="ParameterValue">.</DTS:Property>
-    </DTS:PackageParameter>
-    <DTS:PackageParameter
-      DTS:CreationName=""
-      DTS:DataType="3"
-      DTS:Description="Re-extract this many visits below the high-water mark, to pick up answers entered after the visit."
-      DTS:DTSID="{0F091F98-B36D-4645-AE81-355E86FB1025}"
-      DTS:ObjectName="LookbackVisits">
-      <DTS:Property
-        DTS:DataType="3"
-        DTS:Name="ParameterValue">200</DTS:Property>
-    </DTS:PackageParameter>
-  </DTS:PackageParameters>
   <DTS:Variables>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{815CDAE3-BC20-40D2-A66A-25B16E8AB237}"
+      DTS:DTSID="{AEB3075C-DCE0-4210-B20A-BC82875CF23A}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="FromVisitNo">
@@ -101,7 +53,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{8AD048FE-FEBB-49CF-A91C-2ED9C4B1C442}"
+      DTS:DTSID="{AEDA21E2-7BA6-43D5-AB00-E7B74E6A671F}"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="HashSalt">
@@ -111,7 +63,53 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{7AF3D19B-8BD0-4BEF-AE08-0D55AA6046C3}"
+      DTS:DTSID="{CF67214F-A975-4F9E-BD8A-0301E2397001}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="LabFlowDatabase">
+      <DTS:VariableValue
+        DTS:DataType="8">LabFlow</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{6B47E6B2-A03E-41F9-B18E-D4E663361260}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="LabFlowServer">
+      <DTS:VariableValue
+        DTS:DataType="8">.</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{D4194F9F-BE49-46EF-824F-86E2F4FA764D}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="LegacyDatabase">
+      <DTS:VariableValue
+        DTS:DataType="8">Laboratory</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{9FAA082B-7E86-41FF-833D-A6B9267E6C0E}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="LegacyServer">
+      <DTS:VariableValue
+        DTS:DataType="8">.</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:Description="Re-extract this many visits below the high-water mark, to pick up answers entered after the visit."
+      DTS:DTSID="{B2726563-59EB-43C7-AFF2-597C8E78681E}"
+      DTS:IncludeInDebugDump="6789"
+      DTS:Namespace="User"
+      DTS:ObjectName="LookbackVisits">
+      <DTS:VariableValue
+        DTS:DataType="3">200</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{BA86CCD9-0997-48BC-8092-013EE2BC30FD}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="RowsResults">
@@ -120,7 +118,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{CC4F6C25-0995-4979-A8D9-DAAE5DFE1BDC}"
+      DTS:DTSID="{06D7F106-613C-4E63-B320-0963CA06351B}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="RowsVisits">
@@ -129,7 +127,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{84257F0B-BF5C-47A4-8D27-BD96E3977FB0}"
+      DTS:DTSID="{8128BB07-6A44-48B6-8FA6-C412F113784A}"
       DTS:IncludeInDebugDump="6789"
       DTS:Namespace="User"
       DTS:ObjectName="RunId">
@@ -138,7 +136,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{9790B903-5210-4F07-9D1B-B84D73ABE24B}"
+      DTS:DTSID="{45CB4E84-AFFE-4B23-B461-AADE07EFC932}"
       DTS:EvaluateAsExpression="True"
       DTS:Expression="&quot;SELECT r.FishNo AS LegacyVisitNo, r.Az_ID AS LegacyAzId, r.ChildAz_ID AS LegacyChildAzId, r.[Row] AS RowNo, r.Row2 AS RowNo2, CAST(r.Answer1 AS nvarchar(250)) AS Answer, CAST(r.Unit AS nvarchar(15)) AS Unit, CAST(r.NormalRange AS nvarchar(200)) AS NormalRange, r.OutOfNormalRange AS OutOfRange, r.OutOfCriticalNormalRange AS OutOfCritical, CAST(r.NoAnswer AS nvarchar(1)) AS NoAnswer FROM dbo.MRJAZ r WHERE r.FishNo &gt; &quot; + (DT_WSTR, 12) @[User::FromVisitNo]"
       DTS:IncludeInDebugDump="2345"
@@ -149,7 +147,7 @@
     </DTS:Variable>
     <DTS:Variable
       DTS:CreationName=""
-      DTS:DTSID="{AFCB9F81-492E-4EB6-8433-94EF0BF7B0EC}"
+      DTS:DTSID="{92CF8B7F-6F53-4D7E-BEB2-B79E23480825}"
       DTS:EvaluateAsExpression="True"
       DTS:Expression="&quot;SELECT m.FishNo AS LegacyVisitNo, CAST(CONVERT(char(64), HASHBYTES('SHA2_256', CONCAT('&quot; + @[User::HashSalt] + &quot;', '|', m.PRV_Code)), 2) AS nchar(16)) AS PatientHash, p.Sex AS LegacySex, m.Age, m.AgeKind, CAST(m.[Date] AS nvarchar(10)) AS VisitDateJ, CAST(m.[Time] AS nvarchar(8)) AS VisitTime, CAST(m.AnsDate AS nvarchar(10)) AS AnswerDateJ, CAST(m.AnsTime AS nvarchar(8)) AS AnswerTime, m.Bime_ID AS LegacyPayerId, m.Cancel AS Cancelled, m.PregnancyWeek FROM dbo.MRJ m LEFT JOIN dbo.PRV p ON p.Code = m.PRV_Code WHERE m.FishNo &gt; &quot; + (DT_WSTR, 12) @[User::FromVisitNo]"
       DTS:IncludeInDebugDump="2345"
@@ -164,9 +162,9 @@
       DTS:refId="Package\DFT Extract legacy"
       DTS:CreationName="Microsoft.Pipeline"
       DTS:Description="Legacy rows into etl.stg_* (truncated by SQL Start run)."
-      DTS:DTSID="{4BEE83F0-A9C9-4B14-B81D-2092C6FF35C8}"
+      DTS:DTSID="{D3CC5788-BF61-432A-9FD0-AA9CF0529B06}"
       DTS:ExecutableType="Microsoft.Pipeline"
-      DTS:LocaleID="-1"
+      DTS:LocaleID="1033"
       DTS:ObjectName="DFT Extract legacy"
       DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
       <DTS:Variables />
@@ -1215,11 +1213,11 @@
                 <property
                   dataType="System.Int32"
                   description="Specifies the column code page to use when code page information is unavailable from the data source."
-                  name="DefaultCodePage">1252</property>
+                  name="DefaultCodePage">1256</property>
                 <property
                   dataType="System.Boolean"
                   description="Forces the use of the DefaultCodePage property value when describing character data."
-                  name="AlwaysUseDefaultCodePage">false</property>
+                  name="AlwaysUseDefaultCodePage">true</property>
                 <property
                   dataType="System.Int32"
                   description="Specifies the mode used to access the database."
@@ -1643,11 +1641,11 @@
                 <property
                   dataType="System.Int32"
                   description="Specifies the column code page to use when code page information is unavailable from the data source."
-                  name="DefaultCodePage">1252</property>
+                  name="DefaultCodePage">1256</property>
                 <property
                   dataType="System.Boolean"
                   description="Forces the use of the DefaultCodePage property value when describing character data."
-                  name="AlwaysUseDefaultCodePage">false</property>
+                  name="AlwaysUseDefaultCodePage">true</property>
                 <property
                   dataType="System.Int32"
                   description="Specifies the mode used to access the database."
@@ -2174,17 +2172,17 @@
     <DTS:Executable
       DTS:refId="Package\SQL Start run"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
-      DTS:DTSID="{B21D0067-61D6-4F19-87FE-53FA7CFEB292}"
+      DTS:DTSID="{A1BBC677-4D13-4F7E-8C85-98AF2D0C1982}"
       DTS:ExecutableType="Microsoft.ExecuteSQLTask"
-      DTS:LocaleID="-1"
+      DTS:LocaleID="1033"
       DTS:ObjectName="SQL Start run"
       DTS:ThreadHint="0">
       <DTS:Variables />
       <DTS:PropertyExpression
-        DTS:Name="SqlStatementSource">"EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = " + (DT_WSTR, 10) @[$Package::LookbackVisits]</DTS:PropertyExpression>
+        DTS:Name="SqlStatementSource">"EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = " + (DT_WSTR, 10) @[User::LookbackVisits]</DTS:PropertyExpression>
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
-          SQLTask:Connection="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+          SQLTask:Connection="{27C7D40E-FFCC-4BD5-8F9B-8718ED7D144F}"
           SQLTask:SqlStatementSource="EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = 200"
           SQLTask:ResultType="ResultSetType_SingleRow" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
           <SQLTask:ResultBinding
@@ -2203,9 +2201,9 @@
       DTS:refId="Package\SQL Transform and load"
       DTS:CreationName="Microsoft.ExecuteSQLTask"
       DTS:Description="Map to LOINC/SI, shift dates, flag data-quality issues, MERGE into dw."
-      DTS:DTSID="{05E93C71-0C50-4B3E-9E18-99CC5347FE4E}"
+      DTS:DTSID="{B3B70E52-C48D-4FCE-BB82-B14B2C0F0691}"
       DTS:ExecutableType="Microsoft.ExecuteSQLTask"
-      DTS:LocaleID="-1"
+      DTS:LocaleID="1033"
       DTS:ObjectName="SQL Transform and load"
       DTS:ThreadHint="0">
       <DTS:Variables />
@@ -2213,42 +2211,42 @@
         DTS:Name="SqlStatementSource">"EXEC etl.usp_TransformLoad @RunId = " + (DT_WSTR, 12) @[User::RunId]</DTS:PropertyExpression>
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
-          SQLTask:Connection="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+          SQLTask:Connection="{27C7D40E-FFCC-4BD5-8F9B-8718ED7D144F}"
           SQLTask:SqlStatementSource="EXEC etl.usp_TransformLoad @RunId = 0" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
   </DTS:Executables>
   <DTS:PrecedenceConstraints>
     <DTS:PrecedenceConstraint
-      DTS:refId="Package.PrecedenceConstraints[{25BF9AAB-28A3-4147-85AD-CFA80A68F8C4\}]"
+      DTS:refId="Package.PrecedenceConstraints[{4A3EBC7B-0908-46A0-87A8-BC45AE5DCC8B\}]"
       DTS:CreationName=""
-      DTS:DTSID="{25BF9AAB-28A3-4147-85AD-CFA80A68F8C4}"
+      DTS:DTSID="{4A3EBC7B-0908-46A0-87A8-BC45AE5DCC8B}"
       DTS:From="Package\SQL Start run"
       DTS:LogicalAnd="True"
-      DTS:ObjectName="{25BF9AAB-28A3-4147-85AD-CFA80A68F8C4}"
+      DTS:ObjectName="{4A3EBC7B-0908-46A0-87A8-BC45AE5DCC8B}"
       DTS:To="Package\DFT Extract legacy" />
     <DTS:PrecedenceConstraint
-      DTS:refId="Package.PrecedenceConstraints[{C7A8296D-FA87-424B-9F65-EC661724AEDE\}]"
+      DTS:refId="Package.PrecedenceConstraints[{969368B7-2365-41F7-B055-D1C56AE471A3\}]"
       DTS:CreationName=""
-      DTS:DTSID="{C7A8296D-FA87-424B-9F65-EC661724AEDE}"
+      DTS:DTSID="{969368B7-2365-41F7-B055-D1C56AE471A3}"
       DTS:From="Package\DFT Extract legacy"
       DTS:LogicalAnd="True"
-      DTS:ObjectName="{C7A8296D-FA87-424B-9F65-EC661724AEDE}"
+      DTS:ObjectName="{969368B7-2365-41F7-B055-D1C56AE471A3}"
       DTS:To="Package\SQL Transform and load" />
   </DTS:PrecedenceConstraints>
   <DTS:EventHandlers>
     <DTS:EventHandler
       DTS:refId="Package.EventHandlers[OnError]"
       DTS:CreationName="OnError"
-      DTS:DTSID="{300C5AA2-D91C-44DB-B29A-CFBFFAACA920}"
-      DTS:EventID="4"
+      DTS:DTSID="{63F44A26-4332-4684-A2C8-52C5C772DBC8}"
+      DTS:EventID="0"
       DTS:EventName="OnError"
       DTS:LocaleID="-1">
       <DTS:Variables>
         <DTS:Variable
           DTS:CreationName=""
           DTS:Description="The propagate property of the event"
-          DTS:DTSID="{630106DD-B454-40D8-9B77-B3214E2459BB}"
+          DTS:DTSID="{F0A718D6-5574-44FF-BA05-B27A813D289F}"
           DTS:IncludeInDebugDump="6789"
           DTS:Namespace="System"
           DTS:ObjectName="Propagate">
@@ -2260,16 +2258,16 @@
         <DTS:Executable
           DTS:refId="Package.EventHandlers[OnError]\SQL Fail run"
           DTS:CreationName="Microsoft.ExecuteSQLTask"
-          DTS:DTSID="{8B9B7B15-668A-4C48-AF2B-8BD555987C0E}"
+          DTS:DTSID="{7BB42CC3-4054-47B6-A2DE-A0CABF54C28F}"
           DTS:ExecutableType="Microsoft.ExecuteSQLTask"
-          DTS:LocaleID="-1"
+          DTS:LocaleID="1033"
           DTS:ObjectName="SQL Fail run">
           <DTS:Variables />
           <DTS:PropertyExpression
             DTS:Name="SqlStatementSource">"EXEC etl.usp_FailRun @RunId = " + (DT_WSTR, 12) @[User::RunId] + ", @Message = N'" + REPLACE(LEFT(@[System::SourceName] + ": " + @[System::ErrorDescription], 1800), "'", "''") + "'"</DTS:PropertyExpression>
           <DTS:ObjectData>
             <SQLTask:SqlTaskData
-              SQLTask:Connection="{548AFC8F-A6F0-4409-B3F8-25059A6B28FA}"
+              SQLTask:Connection="{27C7D40E-FFCC-4BD5-8F9B-8718ED7D144F}"
               SQLTask:SqlStatementSource="EXEC etl.usp_FailRun @RunId = 0, @Message = N': '" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
           </DTS:ObjectData>
         </DTS:Executable>

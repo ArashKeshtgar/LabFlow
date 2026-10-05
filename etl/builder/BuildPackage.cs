@@ -3,6 +3,7 @@
 // code. The generated .dtsx opens in Visual Studio's SSIS designer like any
 // hand-drawn package.
 //
+//   Settings: User::LegacyServer/LegacyDatabase/LabFlowServer/LabFlowDatabase/LookbackVisits
 //   Control flow:  SQL Start run -> DFT Extract legacy -> SQL Transform and load
 //                  (OnError: SQL Fail run)
 //   Data flow:     four independent paths, legacy -> etl.stg_*
@@ -30,19 +31,23 @@ static class BuildPackage
             Name = "LabFlowETL",
             Description = "Legacy Laboratory database -> de-identified staging -> LabFlow reporting warehouse (dw).",
             ProtectionLevel = DTSProtectionLevel.DontSaveSensitive,
+            // Fixed locale: service accounts (SQL Agent) can have the custom
+            // default locale 0x0C00, which .NET refuses ("Culture is not supported").
+            LocaleID = 1033,
         };
 
-        // ---- parameters (overridable per environment: dtexec /Par, SQL Agent, catalog) ----
-        AddParam(pkg, "LegacyServer", ".");
-        AddParam(pkg, "LegacyDatabase", "Laboratory");
-        AddParam(pkg, "LabFlowServer", ".");
-        AddParam(pkg, "LabFlowDatabase", "LabFlow");
-        var lookback = pkg.Parameters.Add("LookbackVisits", TypeCode.Int32);
-        lookback.Value = 200;
+        // ---- settings (overridable per environment: dtexec /SET, SQL Agent job step) ----
+        // Package variables rather than parameters: the package runs from a
+        // file, and dtexec only passes parameters to catalog-deployed packages.
+        AddSetting(pkg, "LegacyServer", ".");
+        AddSetting(pkg, "LegacyDatabase", "Laboratory");
+        AddSetting(pkg, "LabFlowServer", ".");
+        AddSetting(pkg, "LabFlowDatabase", "LabFlow");
+        var lookback = pkg.Variables.Add("LookbackVisits", false, "User", 200);
         lookback.Description = "Re-extract this many visits below the high-water mark, to pick up answers entered after the visit.";
 
         // ---- connections ----
-        var legacy = AddOleDb(pkg, "Legacy", "LegacyServer", "LegacyDatabase");
+        var legacy = AddOleDb(pkg, "Legacy", "LegacyServer", "LegacyDatabase", "Auto Translate=False;");
         var labflow = AddOleDb(pkg, "LabFlow", "LabFlowServer", "LabFlowDatabase");
 
         // ---- variables ----
@@ -74,7 +79,7 @@ static class BuildPackage
         // ---- 1. start run ----
         var start = AddSqlTask(pkg.Executables, "SQL Start run", labflow,
             "EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = 200",
-            "\"EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = \" + (DT_WSTR, 10) @[$Package::LookbackVisits]");
+            "\"EXEC etl.usp_StartRun @Package = 'LabFlowETL', @LookbackVisits = \" + (DT_WSTR, 10) @[User::LookbackVisits]");
         var startSql = (ExecuteSQLTask)start.InnerObject;
         startSql.ResultSetType = ResultSetType.ResultSetType_SingleRow;
         Bind(startSql, "RunId", "User::RunId");
@@ -84,6 +89,7 @@ static class BuildPackage
         // ---- 2. extract ----
         var dft = (TaskHost)pkg.Executables.Add("STOCK:PipelineTask");
         dft.Name = "DFT Extract legacy";
+        dft.LocaleID = 1033;
         dft.Description = "Legacy rows into etl.stg_* (truncated by SQL Start run).";
         var pipe = (MainPipe)dft.InnerObject;
 
@@ -91,14 +97,14 @@ static class BuildPackage
         // Conversion makes them Unicode for the nvarchar staging columns.
         {
             var src = AddSource(pipe, "SRC Legacy tests", legacy,
-                "SELECT ID AS LegacyAzId, InternationalCode AS CodeRaw, Name AS NameRaw, Unit AS UnitRaw, Section FROM dbo.AzDefine", null);
+                "SELECT ID AS LegacyAzId, InternationalCode AS CodeRaw, Name AS NameRaw, Unit AS UnitRaw, Section FROM dbo.AzDefine", null, 1256);
             var dc = AddDataConversion(pipe, "DC Tests to Unicode", src, new[] {
                 Tuple.Create("CodeRaw", "LegacyCode", 12), Tuple.Create("NameRaw", "LegacyName", 50), Tuple.Create("UnitRaw", "LegacyUnit", 15) });
             AddDestination(pipe, "DST stg_Test", labflow, "[etl].[stg_Test]", dc);
         }
         {
             var src = AddSource(pipe, "SRC Legacy payers", legacy,
-                "SELECT ID AS LegacyPayerId, Name AS NameRaw FROM dbo.Bime", null);
+                "SELECT ID AS LegacyPayerId, Name AS NameRaw FROM dbo.Bime", null, 1256);
             var dc = AddDataConversion(pipe, "DC Payers to Unicode", src, new[] { Tuple.Create("NameRaw", "PayerName", 200) });
             AddDestination(pipe, "DST stg_Payer", labflow, "[etl].[stg_Payer]", dc);
         }
@@ -139,21 +145,23 @@ static class BuildPackage
 
     // ------------------------------------------------------------------ helpers
 
-    static void AddParam(Package pkg, string name, string value)
+    static void AddSetting(Package pkg, string name, string value)
     {
-        var p = pkg.Parameters.Add(name, TypeCode.String);
-        p.Value = value;
+        pkg.Variables.Add(name, false, "User", value);
     }
 
-    static ConnectionManager AddOleDb(Package pkg, string name, string serverParam, string dbParam)
+    // extra: for the legacy connection, Auto Translate=False keeps varchar
+    // bytes as they are (code page 1256) instead of translating them to this
+    // machine's ANSI code page, which has no Persian letters.
+    static ConnectionManager AddOleDb(Package pkg, string name, string serverParam, string dbParam, string extra = "")
     {
         var cm = pkg.Connections.Add("OLEDB");
         cm.Name = name;
         cm.ConnectionString = "Data Source=.;Initial Catalog=" + (name == "Legacy" ? "Laboratory" : "LabFlow") +
-                              ";Provider=MSOLEDBSQL;Integrated Security=SSPI;";
+                              ";Provider=MSOLEDBSQL;Integrated Security=SSPI;" + extra;
         cm.Properties["ConnectionString"].SetExpression(cm,
-            "\"Data Source=\" + @[$Package::" + serverParam + "] + \";Initial Catalog=\" + @[$Package::" + dbParam +
-            "] + \";Provider=MSOLEDBSQL;Integrated Security=SSPI;\"");
+            "\"Data Source=\" + @[User::" + serverParam + "] + \";Initial Catalog=\" + @[User::" + dbParam +
+            "] + \";Provider=MSOLEDBSQL;Integrated Security=SSPI;" + extra + "\"");
         return cm;
     }
 
@@ -173,6 +181,7 @@ static class BuildPackage
     {
         var host = (TaskHost)owner.Add("STOCK:SQLTask");
         host.Name = name;
+        host.LocaleID = 1033;
         var sql = (ExecuteSQLTask)host.InnerObject;
         sql.Connection = cm.Name;
         sql.SqlStatementSourceType = SqlStatementSourceType.DirectInput;
@@ -213,11 +222,18 @@ static class BuildPackage
 
     // Metadata comes from the design-time query; at run time the source reads
     // the same query from the expression variable (same columns, new values).
-    static IDTSComponentMetaData100 AddSource(MainPipe pipe, string name, ConnectionManager cm, string query, string queryVariable)
+    // codePage: read varchar columns as this code page (the legacy collation's).
+    static IDTSComponentMetaData100 AddSource(MainPipe pipe, string name, ConnectionManager cm, string query, string queryVariable,
+                                              int codePage = 0)
     {
         CManagedComponentWrapper inst;
         var c = NewComponent(pipe, "OLE DB Source", name, out inst);
         UseConnection(c, cm);
+        if (codePage != 0)
+        {
+            inst.SetComponentProperty("AlwaysUseDefaultCodePage", true);
+            inst.SetComponentProperty("DefaultCodePage", codePage);
+        }
         inst.SetComponentProperty("AccessMode", 2);   // SQL command
         inst.SetComponentProperty("SqlCommand", query);
         inst.AcquireConnections(null);

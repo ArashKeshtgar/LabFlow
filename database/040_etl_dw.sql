@@ -270,6 +270,9 @@ BEGIN
 END;
 GO
 
+-- @RunId = 0 means the package failed before it learned its run id (e.g. in
+-- SQL Start run itself, after the run row was written). usp_StartRun allows
+-- only one Running run at a time, so that row is the one to close.
 CREATE PROCEDURE etl.usp_FailRun
     @RunId   int,
     @Message nvarchar(2000)
@@ -277,7 +280,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE etl.LoadRun SET Status = 'Failed', EndedAt = SYSUTCDATETIME(), Message = LEFT(@Message, 2000)
-    WHERE RunId = @RunId AND Status = 'Running';
+    WHERE Status = 'Running' AND (RunId = @RunId OR @RunId = 0);
 END;
 GO
 
