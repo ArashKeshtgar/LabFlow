@@ -306,6 +306,14 @@ def cards(page, y, measures, h=100):
             for i, m in enumerate(measures)]
 
 
+THEME_FILE = "LabFlow.json"
+THEME = {
+    "name": "LabFlow",
+    "dataColors": ["#0F6E6E", "#E07A3F", "#3B6FB6", "#B0413E", "#6A8D2F", "#8E5EA2", "#C9A227", "#5B6770"],
+    "background": "#FFFFFF", "foreground": "#1F2933", "tableAccent": "#0F6E6E",
+    "good": "#2E7D32", "neutral": "#C9A227", "bad": "#B0413E",
+}
+
 PAGES = []
 
 
@@ -398,8 +406,13 @@ def build_report() -> None:
         "$schema": f"{SCHEMA}/item/report/definition/versionMetadata/1.0.0/schema.json", "version": "2.0.0"})
     write_json(d / "report.json", {
         "$schema": f"{SCHEMA}/item/report/definition/report/1.0.0/schema.json",
+        "themeCollection": {"customTheme": {
+            "name": THEME_FILE, "reportVersionAtImport": "5.55", "type": "RegisteredResources"}},
         "layoutOptimization": "None",
+        "resourcePackages": [{"name": "RegisteredResources", "type": "RegisteredResources", "items": [
+            {"name": THEME_FILE, "path": THEME_FILE, "type": "CustomTheme"}]}],
         "settings": {"useStylableVisualContainerHeader": True, "defaultDrillFilterOtherVisuals": True}})
+    write_json(RP / "StaticResources" / "RegisteredResources" / THEME_FILE, THEME)
     build_pages()
     write_json(d / "pages" / "pages.json", {
         "$schema": f"{SCHEMA}/item/report/definition/pagesMetadata/1.0.0/schema.json",
@@ -414,7 +427,7 @@ def build_report() -> None:
 
 
 def main() -> None:
-    for folder in (SM / "definition", RP / "definition"):
+    for folder in (SM / "definition", RP / "definition", RP / "StaticResources"):
         shutil.rmtree(folder, ignore_errors=True)
     build_model()
     build_report()
@@ -422,7 +435,7 @@ def main() -> None:
         "$schema": f"{SCHEMA}/pbip/pbipProperties/1.0.0/schema.json",
         "version": "1.0", "artifacts": [{"report": {"path": "LabFlow.Report"}}],
         "settings": {"enableAutoRecovery": True}})
-    write(HERE / ".gitignore", "**/.pbi/localSettings.json\n**/.pbi/cache.abf\n")
+    write(HERE / ".gitignore", "**/.pbi/localSettings.json\n**/.pbi/cache.abf\n.schemas/\n")
     print(f"PBIP written to {HERE}: {len(TABLES)} tables, {len(MEASURES)} measures, {len(PAGES)} pages")
 
 
