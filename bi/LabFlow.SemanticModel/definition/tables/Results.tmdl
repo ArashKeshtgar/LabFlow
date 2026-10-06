@@ -1,0 +1,150 @@
+table Results
+
+	/// Test results (panel members, not panel headers).
+	measure 'Result Count' = COUNTROWS ( Results )
+		formatString: #,0
+
+	/// Distinct legacy visits.
+	measure Visits = DISTINCTCOUNT ( Results[VisitNo] )
+		formatString: #,0
+
+	/// Distinct de-identified patients.
+	measure Patients = DISTINCTCOUNT ( Results[PatientKey] )
+		formatString: #,0
+
+	/// Results with a reported value.
+	measure 'Answered Results' = CALCULATE ( [Result Count], Results[HasAnswer] = TRUE () )
+		formatString: #,0
+
+	/// Share of results that have a value.
+	measure 'Answered %' = DIVIDE ( [Answered Results], [Result Count] )
+		formatString: 0.0%
+
+	/// Answered results outside the reference range.
+	measure 'Abnormal Results' = CALCULATE ( [Result Count], Results[IsAbnormal] = TRUE () )
+		formatString: #,0
+
+	/// Abnormal results over answered results.
+	measure 'Abnormal %' = DIVIDE ( [Abnormal Results], [Answered Results] )
+		formatString: 0.0%
+
+	/// Results flagged critical.
+	measure 'Critical Results' = CALCULATE ( [Result Count], Results[IsCritical] = TRUE () )
+		formatString: #,0
+
+	/// Visit date to answer date, in days.
+	measure 'Avg Turnaround (days)' = AVERAGE ( Results[TurnaroundDays] )
+		formatString: 0.00
+
+	/// Results that have both a visit and an answer date.
+	measure 'Results With Turnaround' = COUNT ( Results[TurnaroundDays] )
+		formatString: #,0
+
+	/// Results answered on the visit date.
+	measure 'Same-day %' = DIVIDE ( CALCULATE ( [Results With Turnaround], Results[TurnaroundDays] = 0 ), [Results With Turnaround] )
+		formatString: 0.0%
+
+	/// Results whose legacy test is mapped to a LOINC code.
+	measure 'LOINC Mapped %' = DIVIDE ( CALCULATE ( [Result Count], Test[MapStatus] <> "Unmapped" ), [Result Count] )
+		formatString: 0.0%
+
+	column ResultKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: ResultKey
+
+	column VisitNo
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: LegacyVisitNo
+
+	column TestKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: TestKey
+
+	column PatientKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: PatientKey
+
+	column PayerKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: PayerKey
+
+	column VisitDateKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: VisitDateKey
+
+	column ResultDateKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: ResultDateKey
+
+	column AgeBand
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AgeBand
+
+	column HasAnswer
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: HasAnswer
+
+	column ValueSi
+		dataType: double
+		formatString: #,0.###
+		summarizeBy: none
+		sourceColumn: ValueSi
+
+	column IsAbnormal
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: IsAbnormal
+
+	column IsCritical
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: IsCritical
+
+	column TurnaroundDays
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: TurnaroundDays
+
+	column LoadRunId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: LoadRunId
+
+	column 'TAT Band Order' = SWITCH ( TRUE (), ISBLANK ( Results[TurnaroundDays] ), 9, Results[TurnaroundDays] = 0, 1, Results[TurnaroundDays] = 1, 2, Results[TurnaroundDays] <= 3, 3, Results[TurnaroundDays] <= 7, 4, 5 )
+		dataType: int64
+		isHidden
+		summarizeBy: none
+
+	column 'TAT Band' = SWITCH ( Results[TAT Band Order], 1, "Same day", 2, "1 day", 3, "2-3 days", 4, "4-7 days", 5, "8+ days", "No answer date" )
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'TAT Band Order'
+
+	partition Results = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="dw", Item="FactLabResult"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"ResultKey", "LegacyVisitNo", "TestKey", "PatientKey", "PayerKey", "VisitDateKey", "ResultDateKey", "AgeBand", "HasAnswer", "ValueSi", "IsAbnormal", "IsCritical", "TurnaroundDays", "LoadRunId"}),
+				    Renamed = Table.RenameColumns(Kept, {{"LegacyVisitNo", "VisitNo"}})
+				in
+				    Renamed

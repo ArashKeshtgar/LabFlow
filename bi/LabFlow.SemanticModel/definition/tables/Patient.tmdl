@@ -1,0 +1,22 @@
+table Patient
+
+	column PatientKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: PatientKey
+
+	column Sex
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Sex
+
+	partition Patient = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="dw", Item="DimPatient"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"PatientKey", "Sex"})
+				in
+				    Kept

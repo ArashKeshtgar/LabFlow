@@ -1,0 +1,42 @@
+table Test
+
+	column TestKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: TestKey
+
+	column TestName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: TestName
+
+	column LoincCode
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LoincCode
+
+	column SiUnit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SiUnit
+
+	column MapStatus
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MapStatus
+
+	column IsPanel
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: IsPanel
+
+	partition Test = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="dw", Item="DimTest"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"TestKey", "TestName", "LoincCode", "SiUnit", "MapStatus", "IsPanel"})
+				in
+				    Kept

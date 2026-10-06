@@ -1,0 +1,190 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "371d0e9a7073c07a5181",
+  "position": {
+    "x": 24,
+    "y": 186,
+    "z": 20,
+    "width": 1232,
+    "height": 200,
+    "tabOrder": 20
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "RunId"
+                }
+              },
+              "queryRef": "Load Runs.RunId",
+              "nativeQueryRef": "RunId"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "StartedAt"
+                }
+              },
+              "queryRef": "Load Runs.StartedAt",
+              "nativeQueryRef": "StartedAt"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "Status"
+                }
+              },
+              "queryRef": "Load Runs.Status",
+              "nativeQueryRef": "Status"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "ResultsExtracted"
+                }
+              },
+              "queryRef": "Load Runs.ResultsExtracted",
+              "nativeQueryRef": "ResultsExtracted"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "ResultsInserted"
+                }
+              },
+              "queryRef": "Load Runs.ResultsInserted",
+              "nativeQueryRef": "ResultsInserted"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "ResultsUpdated"
+                }
+              },
+              "queryRef": "Load Runs.ResultsUpdated",
+              "nativeQueryRef": "ResultsUpdated"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "ResultsSkipped"
+                }
+              },
+              "queryRef": "Load Runs.ResultsSkipped",
+              "nativeQueryRef": "ResultsSkipped"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "ResultsRejected"
+                }
+              },
+              "queryRef": "Load Runs.ResultsRejected",
+              "nativeQueryRef": "ResultsRejected"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Load Runs"
+                    }
+                  },
+                  "Property": "Warnings"
+                }
+              },
+              "queryRef": "Load Runs.Warnings",
+              "nativeQueryRef": "Warnings"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Load Runs"
+                  }
+                },
+                "Property": "RunId"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'SSIS load runs (on-prem)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

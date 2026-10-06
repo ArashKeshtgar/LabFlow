@@ -1,0 +1,27 @@
+table Payer
+
+	column PayerKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: PayerKey
+
+	column PayerName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PayerName
+
+	column PayerType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: PayerType
+
+	partition Payer = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="dw", Item="DimPayer"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"PayerKey", "PayerName", "PayerType"})
+				in
+				    Kept

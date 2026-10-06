@@ -1,0 +1,57 @@
+table 'Copy Runs'
+
+	/// Fact rows inserted or updated in Azure by the ADF pipeline.
+	measure 'Facts Copied To Azure' = SUM ( 'Copy Runs'[FactsInserted] ) + SUM ( 'Copy Runs'[FactsUpdated] )
+		formatString: #,0
+
+	column CopyRunId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: CopyRunId
+
+	column StartedAt
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: StartedAt
+
+	column FromSourceRunId
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: FromSourceRunId
+
+	column ToSourceRunId
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ToSourceRunId
+
+	column FactsStaged
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: FactsStaged
+
+	column FactsInserted
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: FactsInserted
+
+	column FactsUpdated
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: FactsUpdated
+
+	partition 'Copy Runs' = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="etl", Item="CopyRun"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"CopyRunId", "StartedAt", "FromSourceRunId", "ToSourceRunId", "FactsStaged", "FactsInserted", "FactsUpdated"})
+				in
+				    Kept

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "0e75b9161616228b8a8f",
+  "position": {
+    "x": 640,
+    "y": 402,
+    "z": 22,
+    "width": 616,
+    "height": 140,
+    "tabOrder": 22
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "StartedAt"
+                }
+              },
+              "queryRef": "Copy Runs.StartedAt",
+              "nativeQueryRef": "StartedAt"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "FromSourceRunId"
+                }
+              },
+              "queryRef": "Copy Runs.FromSourceRunId",
+              "nativeQueryRef": "FromSourceRunId"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "ToSourceRunId"
+                }
+              },
+              "queryRef": "Copy Runs.ToSourceRunId",
+              "nativeQueryRef": "ToSourceRunId"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "FactsStaged"
+                }
+              },
+              "queryRef": "Copy Runs.FactsStaged",
+              "nativeQueryRef": "FactsStaged"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "FactsInserted"
+                }
+              },
+              "queryRef": "Copy Runs.FactsInserted",
+              "nativeQueryRef": "FactsInserted"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "FactsUpdated"
+                }
+              },
+              "queryRef": "Copy Runs.FactsUpdated",
+              "nativeQueryRef": "FactsUpdated"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Copy Runs"
+                  }
+                },
+                "Property": "StartedAt"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'ADF copy runs (Azure)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

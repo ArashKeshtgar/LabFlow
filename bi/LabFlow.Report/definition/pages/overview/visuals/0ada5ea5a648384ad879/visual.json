@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "0ada5ea5a648384ad879",
+  "position": {
+    "x": 1064,
+    "y": 68,
+    "z": 15,
+    "width": 192,
+    "height": 100,
+    "tabOrder": 15
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "Avg Turnaround (days)"
+                }
+              },
+              "queryRef": "Results.Avg Turnaround (days)",
+              "nativeQueryRef": "Avg Turnaround (days)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

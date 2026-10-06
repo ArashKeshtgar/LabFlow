@@ -1,0 +1,58 @@
+table Date
+
+	column DateKey
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column Date
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: Date
+
+	column Year
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: Year
+
+	column Month
+		dataType: int64
+		formatString: 0
+		isHidden
+		summarizeBy: none
+		sourceColumn: Month
+
+	column MonthName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MonthName
+
+	column WeekdayNo
+		dataType: int64
+		formatString: 0
+		isHidden
+		summarizeBy: none
+		sourceColumn: WeekdayNo
+
+	column WeekdayName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WeekdayName
+
+	column IsWeekend
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: IsWeekend
+
+	partition Date = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="dw", Item="DimDate"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"DateKey", "Date", "Year", "Month", "MonthName", "WeekdayNo", "WeekdayName", "IsWeekend"})
+				in
+				    Kept

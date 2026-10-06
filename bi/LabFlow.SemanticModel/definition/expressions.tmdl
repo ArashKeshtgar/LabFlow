@@ -1,0 +1,3 @@
+expression Server = "labflow-arash-sql.database.windows.net" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+expression Database = "LabFlowDW" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]

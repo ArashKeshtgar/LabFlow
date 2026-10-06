@@ -1,0 +1,73 @@
+table 'Load Runs'
+
+	/// SSIS runs that finished.
+	measure 'Load Runs Succeeded' = CALCULATE ( COUNTROWS ( 'Load Runs' ), 'Load Runs'[Status] = "Succeeded" )
+		formatString: #,0
+
+	column RunId
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: RunId
+
+	column Package
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Package
+
+	column StartedAt
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: StartedAt
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Status
+
+	column ResultsExtracted
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: ResultsExtracted
+
+	column ResultsInserted
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: ResultsInserted
+
+	column ResultsUpdated
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: ResultsUpdated
+
+	column ResultsSkipped
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: ResultsSkipped
+
+	column ResultsRejected
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: ResultsRejected
+
+	column Warnings
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: Warnings
+
+	partition 'Load Runs' = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="etl", Item="SourceLoadRun"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"RunId", "Package", "StartedAt", "Status", "ResultsExtracted", "ResultsInserted", "ResultsUpdated", "ResultsSkipped", "ResultsRejected", "Warnings"})
+				in
+				    Kept

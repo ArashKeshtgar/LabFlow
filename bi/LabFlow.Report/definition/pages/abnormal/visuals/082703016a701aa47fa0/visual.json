@@ -1,0 +1,148 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "082703016a701aa47fa0",
+  "position": {
+    "x": 24,
+    "y": 186,
+    "z": 20,
+    "width": 720,
+    "height": 516,
+    "tabOrder": 20
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Test"
+                    }
+                  },
+                  "Property": "TestName"
+                }
+              },
+              "queryRef": "Test.TestName",
+              "nativeQueryRef": "TestName"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Test"
+                    }
+                  },
+                  "Property": "LoincCode"
+                }
+              },
+              "queryRef": "Test.LoincCode",
+              "nativeQueryRef": "LoincCode"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "Answered Results"
+                }
+              },
+              "queryRef": "Results.Answered Results",
+              "nativeQueryRef": "Answered Results"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "Abnormal Results"
+                }
+              },
+              "queryRef": "Results.Abnormal Results",
+              "nativeQueryRef": "Abnormal Results"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "Abnormal %"
+                }
+              },
+              "queryRef": "Results.Abnormal %",
+              "nativeQueryRef": "Abnormal %"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "Critical Results"
+                }
+              },
+              "queryRef": "Results.Critical Results",
+              "nativeQueryRef": "Critical Results"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Results"
+                  }
+                },
+                "Property": "Abnormal Results"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Abnormal results by test'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

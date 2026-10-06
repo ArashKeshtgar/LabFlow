@@ -1,0 +1,52 @@
+table 'Data Quality Issues'
+
+	/// Reject/warning rows across all ETL runs.
+	measure 'Issue Rows' = COUNTROWS ( 'Data Quality Issues' )
+		formatString: #,0
+
+	/// Each source row and rule counted once, however many runs saw it.
+	measure 'Distinct Issues' = COUNTROWS ( SUMMARIZE ( 'Data Quality Issues', 'Data Quality Issues'[SourceTable], 'Data Quality Issues'[SourceKey], 'Data Quality Issues'[Rule] ) )
+		formatString: #,0
+
+	column RejectRowId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: RejectRowId
+
+	column RunId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: RunId
+
+	column Severity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Severity
+
+	column SourceTable
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SourceTable
+
+	column SourceKey
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SourceKey
+
+	column Rule
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Rule_
+
+	partition 'Data Quality Issues' = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database(Server, Database),
+				    Data = Source{[Schema="etl", Item="SourceRejectRow"]}[Data],
+				    Kept = Table.SelectColumns(Data, {"RejectRowId", "RunId", "Severity", "SourceTable", "SourceKey", "Rule_"}),
+				    Renamed = Table.RenameColumns(Kept, {{"Rule_", "Rule"}})
+				in
+				    Renamed

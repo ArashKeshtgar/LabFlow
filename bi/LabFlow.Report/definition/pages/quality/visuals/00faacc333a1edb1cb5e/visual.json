@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "00faacc333a1edb1cb5e",
+  "position": {
+    "x": 648,
+    "y": 68,
+    "z": 12,
+    "width": 296,
+    "height": 100,
+    "tabOrder": 12
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "LOINC Mapped %"
+                }
+              },
+              "queryRef": "Results.LOINC Mapped %",
+              "nativeQueryRef": "LOINC Mapped %"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

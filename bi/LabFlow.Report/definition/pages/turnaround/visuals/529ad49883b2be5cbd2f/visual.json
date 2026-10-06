@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "529ad49883b2be5cbd2f",
+  "position": {
+    "x": 648,
+    "y": 68,
+    "z": 12,
+    "width": 296,
+    "height": 100,
+    "tabOrder": 12
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Results"
+                    }
+                  },
+                  "Property": "Results With Turnaround"
+                }
+              },
+              "queryRef": "Results.Results With Turnaround",
+              "nativeQueryRef": "Results With Turnaround"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

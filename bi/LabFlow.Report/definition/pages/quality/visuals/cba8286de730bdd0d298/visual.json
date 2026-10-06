@@ -1,0 +1,106 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "cba8286de730bdd0d298",
+  "position": {
+    "x": 24,
+    "y": 402,
+    "z": 21,
+    "width": 600,
+    "height": 300,
+    "tabOrder": 21
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data Quality Issues"
+                    }
+                  },
+                  "Property": "Severity"
+                }
+              },
+              "queryRef": "Data Quality Issues.Severity",
+              "nativeQueryRef": "Severity"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data Quality Issues"
+                    }
+                  },
+                  "Property": "Rule"
+                }
+              },
+              "queryRef": "Data Quality Issues.Rule",
+              "nativeQueryRef": "Rule"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data Quality Issues"
+                    }
+                  },
+                  "Property": "Distinct Issues"
+                }
+              },
+              "queryRef": "Data Quality Issues.Distinct Issues",
+              "nativeQueryRef": "Distinct Issues"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Data Quality Issues"
+                  }
+                },
+                "Property": "Distinct Issues"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Data-quality rules hit'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

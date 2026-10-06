@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "name": "b48291dbf76354bd71aa",
+  "position": {
+    "x": 960,
+    "y": 68,
+    "z": 13,
+    "width": 296,
+    "height": 100,
+    "tabOrder": 13
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copy Runs"
+                    }
+                  },
+                  "Property": "Facts Copied To Azure"
+                }
+              },
+              "queryRef": "Copy Runs.Facts Copied To Azure",
+              "nativeQueryRef": "Facts Copied To Azure"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

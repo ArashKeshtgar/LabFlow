@@ -1,0 +1,24 @@
+relationship da59a535eb3fb7fb596beb75bfaeac49
+	fromColumn: Results.TestKey
+	toColumn: Test.TestKey
+
+relationship 7dbefb0dfa37fefba1aaa1f914803574
+	fromColumn: Results.PatientKey
+	toColumn: Patient.PatientKey
+
+relationship 3e83ae544dcf0f53b229c0c718d50fd1
+	fromColumn: Results.PayerKey
+	toColumn: Payer.PayerKey
+
+relationship 5fd40a8f7b6324ca080c513b0c080df8
+	fromColumn: Results.VisitDateKey
+	toColumn: Date.DateKey
+
+relationship d3e9d8156905712f6a6fcc615ae50d1c
+	isActive: false
+	fromColumn: Results.ResultDateKey
+	toColumn: Date.DateKey
+
+relationship 3637db4e6f2a4c096350e6c8b30e5a13
+	fromColumn: 'Data Quality Issues'.RunId
+	toColumn: 'Load Runs'.RunId
