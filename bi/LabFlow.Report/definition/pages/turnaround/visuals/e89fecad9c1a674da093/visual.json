@@ -84,7 +84,7 @@
                     "Entity": "Results"
                   }
                 },
-                "Property": "Avg Turnaround (days)"
+                "Property": "Results With Turnaround"
               }
             },
             "direction": "Descending"

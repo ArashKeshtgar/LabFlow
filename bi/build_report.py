@@ -353,7 +353,7 @@ def build_pages() -> None:
         visual(p, "tableEx", 24, 452, 1232, 250,
                {"Values": ["Test[TestName]", "Results.[Results With Turnaround]",
                            "Results.[Avg Turnaround (days)]", "Results.[Same-day %]"]},
-               "Turnaround by test", sort=("Results.[Avg Turnaround (days)]", "Descending"), z=22),
+               "Turnaround by test", sort=("Results.[Results With Turnaround]", "Descending"), z=22),
     ])
 
     p = "abnormal"
