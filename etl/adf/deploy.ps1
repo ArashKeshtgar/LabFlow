@@ -94,7 +94,7 @@ if ($status -eq 'Online') {
 Write-Host '==> 4/4 Trigger'
 if ($StartTrigger) {
     az datafactory trigger start -g $ResourceGroup --factory-name $FactoryName -n TR_Daily -o none
-    Write-Host '  TR_Daily started (03:00 Toronto)'
+    Write-Host '  TR_Daily started (20:15 Toronto)'
 } else { Write-Host '  TR_Daily left stopped (use -StartTrigger)' }
 
 Write-Host "Done. Run once: az datafactory pipeline create-run -g $ResourceGroup --factory-name $FactoryName -n PL_LabFlow_DW_to_Azure" -ForegroundColor Green

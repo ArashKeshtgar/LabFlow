@@ -42,8 +42,9 @@ param onPremUser string = 'adf_reader'
 @description('Password of the on-prem read-only login. Stored encrypted in the factory.')
 param onPremPassword string
 
-@description('Daily run time (Toronto), after the 02:00 SSIS job.')
-param triggerHour int = 3
+@description('Daily run time (Toronto), after the 20:00 SSIS job.')
+param triggerHour int = 20
+param triggerMinute int = 15
 
 /* ------------------------------------------------------------------ SQL */
 
@@ -297,14 +298,14 @@ resource trigger 'Microsoft.DataFactory/factories/triggers@2018-06-01' = {
   name: 'TR_Daily'
   properties: {
     type: 'ScheduleTrigger'
-    description: 'Every day after the nightly SSIS load.'
+    description: 'Every day after the 20:00 SSIS load.'
     typeProperties: {
       recurrence: {
         frequency: 'Day'
         interval: 1
         startTime: '2026-10-05T00:00:00'
         timeZone: 'Eastern Standard Time'
-        schedule: { hours: [ triggerHour ], minutes: [ 0 ] }
+        schedule: { hours: [ triggerHour ], minutes: [ triggerMinute ] }
       }
     }
     pipelines: [ { pipelineReference: { referenceName: pipeline.name, type: 'PipelineReference' } } ]

@@ -104,7 +104,7 @@ SELECT * FROM LabFlow.dw.vw_MappingCoverage;                      -- how much is
 
 `dtexec` and SQL Agent need the **Integration Services** feature installed on the SQL Server
 instance (Developer/Standard and up); without it the package only runs inside Visual Studio.
-Schedule it nightly (02:00) with
+Schedule it daily at 20:00 (the host is a desktop PC that is off at night) with
 `sqlcmd -S . -E -i etl/agent_job.sql -v PackagePath="<full path to LabFlowETL.dtsx>"`, which also
 gives the Agent account only the rights it needs (read legacy, run `etl` procedures, load staging).
 

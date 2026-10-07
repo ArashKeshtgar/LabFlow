@@ -1,4 +1,5 @@
--- SQL Server Agent job that runs the LabFlow ETL package every night at 02:00.
+-- SQL Server Agent job that runs the LabFlow ETL package every day at 20:00
+-- (evening: the self-hosted IR and SQL Server live on a desktop PC that is off at night).
 --
 --   sqlcmd -S . -E -i etl\agent_job.sql -v PackagePath="D:\E\Projects\LabFlow\etl\LabFlowETL\LabFlowETL.dtsx"
 --
@@ -40,7 +41,7 @@ EXEC dbo.sp_add_jobstep @job_name = @job, @step_name = N'Run LabFlowETL',
     @subsystem = N'SSIS',
     @command = N'/FILE "$(PackagePath)" /CHECKPOINTING OFF /REPORTING E',
     @retry_attempts = 1, @retry_interval = 10;
-EXEC dbo.sp_add_jobschedule @job_name = @job, @name = N'Nightly 02:00',
-    @freq_type = 4, @freq_interval = 1, @active_start_time = 020000;
+EXEC dbo.sp_add_jobschedule @job_name = @job, @name = N'Daily 20:00',
+    @freq_type = 4, @freq_interval = 1, @active_start_time = 200000;
 EXEC dbo.sp_add_jobserver @job_name = @job;
 GO
