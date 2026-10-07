@@ -1,0 +1,78 @@
+# Azure DevOps Pipelines CI for LabFlow: on every push or pull request to
+# main, build the API and run its xUnit tests (results published to the run's
+# Tests tab), then type-check and build the React front end.
+#
+# Set up once in Azure DevOps: New pipeline -> GitHub -> ArashKeshtgar/LabFlow
+# -> "Existing Azure Pipelines YAML file" -> /azure-pipelines.yml.
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: Release
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Api
+        displayName: API build + tests
+        steps:
+          - task: UseDotNet@2
+            displayName: Use .NET 10 SDK
+            inputs:
+              packageType: sdk
+              version: 10.0.x
+
+          - script: dotnet restore LabFlow.slnx
+            displayName: Restore
+
+          - script: dotnet build LabFlow.slnx -c $(buildConfiguration) --no-restore
+            displayName: Build
+
+          - script: >
+              dotnet test LabFlow.slnx -c $(buildConfiguration) --no-build
+              --logger trx --results-directory $(Agent.TempDirectory)/test-results
+              --collect "XPlat Code Coverage"
+            displayName: Test
+
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: '**/*.trx'
+              searchFolder: $(Agent.TempDirectory)/test-results
+
+          - task: PublishCodeCoverageResults@2
+            displayName: Publish code coverage
+            condition: succeededOrFailed()
+            inputs:
+              summaryFileLocation: $(Agent.TempDirectory)/test-results/**/coverage.cobertura.xml
+
+      - job: Web
+        displayName: Web build
+        steps:
+          - task: NodeTool@0
+            displayName: Use Node 22
+            inputs:
+              versionSpec: 22.x
+
+          - script: npm ci
+            displayName: Install
+            workingDirectory: web
+
+          - script: npm run build
+            displayName: Type-check + build
+            workingDirectory: web
+
+          - publish: web/dist
+            artifact: labflow-web
+            displayName: Publish web build
