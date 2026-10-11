@@ -9,6 +9,31 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "connected": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5180",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ClinicHub__Authority": "http://localhost:5301/",
+        "ClinicHub__ClientSecret": "dev-only-labflow-secret",
+        "ClinicHub__RequireHttpsMetadata": "false"
+      }
+    },
+    "connected-per-clinic": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5180",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ClinicHub__Authority": "http://localhost:5301/",
+        "ClinicHub__ClientSecret": "dev-only-labflow-secret",
+        "ClinicHub__RequireHttpsMetadata": "false",
+        "ClinicHub__DatabasePattern": "Server=.;Database=LabFlow_{clinic};Trusted_Connection=True;TrustServerCertificate=True"
+      }
     }
   }
 }

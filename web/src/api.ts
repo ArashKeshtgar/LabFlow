@@ -48,6 +48,26 @@ export type Requisition = {
 
 export type DemoUser = { externalId: string; displayName: string; role: string }
 
+/** "clinichub": staff sign in through ClinicHub; "demo": the development user menu. */
+export type AuthSettings = { signIn: 'clinichub' | 'demo'; perClinicDatabase: boolean }
+export type Me = { userId: number | null; name: string | null; role: string | null; permissions: string[]; clinic: string | null }
+
+const CLINIC_KEY = 'labflow.clinic'
+
+/**
+ * With a database per clinic, public booking names the clinic: a link like /?clinic=harbourview, remembered
+ * for the rest of the visit. Signed-in staff need none: their clinic comes from ClinicHub.
+ */
+export function bookingClinic(): string {
+  const fromLink = new URLSearchParams(window.location.search).get('clinic')
+  try {
+    if (fromLink) sessionStorage.setItem(CLINIC_KEY, fromLink)
+    return fromLink ?? sessionStorage.getItem(CLINIC_KEY) ?? ''
+  } catch {
+    return fromLink ?? ''
+  }
+}
+
 /** Thrown for any non-2xx response. `fieldErrors` is filled for 400 validation problems. */
 export class ApiError extends Error {
   constructor(public status: number, message: string, public fieldErrors: Record<string, string[]> = {}) {
@@ -66,9 +86,12 @@ export function setDemoUser(externalId: string) {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = {}
+  // X-LabFlow: required on changes when signed in with a cookie (connected to ClinicHub); harmless otherwise.
+  const headers: Record<string, string> = { 'X-LabFlow': '1' }
   const user = getDemoUser()
   if (user) headers['X-Demo-User'] = user
+  const clinic = bookingClinic()
+  if (clinic) headers['X-LabFlow-Clinic'] = clinic
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
   const res = await fetch(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) })
@@ -86,6 +109,8 @@ const q = (params: Record<string, string | number>) => new URLSearchParams(Objec
 
 export const api = {
   devUsers: () => request<DemoUser[]>('GET', '/dev/users'),
+  authSettings: () => request<AuthSettings>('GET', '/auth/settings'),
+  me: () => request<Me>('GET', '/me'),
   locations: () => request<Location[]>('GET', '/locations'),
   tests: () => request<LabTest[]>('GET', '/tests'),
   slots: (locationId: number, date: string) => request<Slot[]>('GET', `/locations/${locationId}/slots?${q({ date })}`),

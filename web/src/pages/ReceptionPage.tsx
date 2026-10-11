@@ -13,8 +13,8 @@ type Panel =
 const STATUS_CLASS: Record<string, string> = { Booked: '', CheckedIn: 'info', Completed: 'ok', Cancelled: 'muted', NoShow: 'warn' }
 const STATUS_LABEL: Record<string, string> = { CheckedIn: 'Checked in', NoShow: 'No-show' }
 
-export function ReceptionPage({ canUse }: { canUse: boolean }) {
-  const [locations, setLocations] = useState<Location[]>([])
+export function ReceptionPage({ canUse, connected = false }: { canUse: boolean; connected?: boolean }) {
+  const [locations, setLocations] = useState<Location[] | null>(null)
   const [locationId, setLocationId] = useState<number | null>(null)
   const [date, setDate] = useState(torontoToday())
   const [rows, setRows] = useState<AppointmentRow[] | null>(null)
@@ -22,7 +22,7 @@ export function ReceptionPage({ canUse }: { canUse: boolean }) {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    api.locations().then(ls => { setLocations(ls); if (ls.length) setLocationId(ls[0].locationId) })
+    api.locations().then(ls => { setLocations(ls); if (ls.length) setLocationId(ls[0].locationId) }).catch(() => setLocations([]))
   }, [])
 
   const load = useCallback(() => {
@@ -37,7 +37,21 @@ export function ReceptionPage({ canUse }: { canUse: boolean }) {
     return (
       <section className="card narrow">
         <h1>Reception</h1>
-        <p>Choose a staff user (Reception, Collector or Admin) in the top-right corner to open the front desk.</p>
+        {connected
+          ? <p>Sign in with your clinic's ClinicHub account; a role with LabFlow front-desk access opens the reception.{' '}
+              <a href={`/api/auth/sso/start?returnUrl=${encodeURIComponent('/reception')}`}>Staff sign-in with ClinicHub</a></p>
+          : <p>Choose a staff user (Reception, Collector or Admin) in the top-right corner to open the front desk.</p>}
+      </section>
+    )
+  }
+
+  // A clinic's own LabFlow database starts without collection sites; the day sheet needs one.
+  if (locations?.length === 0) {
+    return (
+      <section className="card narrow">
+        <h1>Reception</h1>
+        <p>This lab has no collection sites yet, so there is no day sheet to show. Add the clinic's collection site
+          (address, hours, capacity) to <code>core.Location</code> and its opening hours, then reload.</p>
       </section>
     )
   }
@@ -66,7 +80,7 @@ export function ReceptionPage({ canUse }: { canUse: boolean }) {
         </div>
         <div className="toolbar">
           <select value={locationId ?? ''} onChange={e => setLocationId(Number(e.target.value))} aria-label="Location">
-            {locations.map(l => <option key={l.locationId} value={l.locationId}>{l.name}</option>)}
+            {(locations ?? []).map(l => <option key={l.locationId} value={l.locationId}>{l.name}</option>)}
           </select>
           <input type="date" value={date} onChange={e => e.target.value && setDate(e.target.value)} aria-label="Date" />
           <button className="btn primary" onClick={() => setPanel({ kind: 'walkin' })}>+ Walk-in</button>

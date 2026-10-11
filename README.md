@@ -44,8 +44,34 @@ cd web; npm install; npm run dev              # UI on http://localhost:5174
 dotnet test                                   # unit tests
 ```
 
-Sign-in is a development-only stub: pick a seeded user from the "Demo user" menu in the top bar
-(the UI sends it as `X-Demo-User`). It is not registered outside the Development environment.
+Not connected to ClinicHub, sign-in is a development-only stub: pick a seeded user from the "Demo user" menu in
+the top bar (the UI sends it as `X-Demo-User`). It is not registered outside the Development environment.
+
+### Connected to ClinicHub
+
+LabFlow can be one of the applications of [ClinicHub](https://github.com/ArashKeshtgar/ClinicHub), a clinic
+platform for Ontario. With a `ClinicHub` section configured, staff sign in through ClinicHub (OpenID Connect, code
+flow with PKCE) instead of the development menu, and ClinicHub's permissions decide what they may do here: a
+clinic role holding `labflow:frontdesk` opens the reception (`frontdesk`), `labflow:admin` everything. Each
+ClinicHub person becomes a `sec.AppUser` (`ExternalId = clinichub:{id}`), so the PHIPA access log names them.
+Every five minutes the session is re-checked with ClinicHub; roles taken away or "sign out everywhere" end it.
+Signing out here signs out of ClinicHub too.
+
+Where the data lives is a setting:
+
+| `ClinicHub:DatabasePattern` | Database |
+|---|---|
+| empty (default) | **One lab** (`ConnectionStrings:LabFlow`) for staff of every clinic: the usual Ontario arrangement, a lab as its own business receiving orders from many clinics. |
+| contains `{clinic}`, e.g. `Server=.;Database=LabFlow_{clinic};…` | **One database per clinic**, built from `database/*.sql` (schema, sequences, reference catalog) at the clinic's first sign-in. Public booking then names the clinic: `/?clinic=harbourview`. |
+
+```powershell
+dotnet run --project src/LabFlow.Api --launch-profile connected              # one lab database
+dotnet run --project src/LabFlow.Api --launch-profile connected-per-clinic   # a database per clinic
+```
+
+A new clinic database has no collection sites until the clinic adds one (`core.Location` and its hours).
+Database tests (`ConnectedTests`) build throw-away databases and run only where a SQL Server is reachable
+(`LABFLOW_TEST_SQL`, or the local default instance); without one they are skipped.
 
 What the API enforces:
 

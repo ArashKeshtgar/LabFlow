@@ -39,6 +39,7 @@ public class DemoAuthHandler(
             new(ClaimTypes.Name, user.DisplayName),
             new(ClaimTypes.Role, user.Role),
         };
+        claims.AddRange(LabPermissions.ForRole(user.Role).Select(p => new Claim(LabPermissions.ClaimType, p)));
         if (user.PatientId is int patientId)
             claims.Add(new Claim(LabFlowClaims.PatientId, patientId.ToString()));
 
@@ -57,5 +58,32 @@ public static class LabFlowClaims
 
 public static class Policies
 {
-    public const string FrontDesk = nameof(FrontDesk);   // Reception, Collector, Admin
+    /// <summary>Reception and collection: the frontdesk or admin permission.</summary>
+    public const string FrontDesk = nameof(FrontDesk);
+}
+
+/// <summary>
+/// What LabFlow checks. A demo user gets them from their role; someone signed in through ClinicHub gets them
+/// from ClinicHub, where a clinic's roles hold "labflow:frontdesk" and arrive here as "frontdesk".
+/// </summary>
+public static class LabPermissions
+{
+    public const string ClaimType = "permission";
+    public const string FrontDesk = "frontdesk";
+    public const string ResultsView = "results.view";
+    public const string Admin = "admin";
+
+    public static readonly string[] All = [FrontDesk, ResultsView, Admin];
+
+    public static string[] ForRole(string role) => role switch
+    {
+        "Admin" => All,
+        "Reception" or "Collector" => [FrontDesk],
+        "Technologist" or "Pathologist" or "Practitioner" => [ResultsView],
+        _ => [],
+    };
+
+    /// <summary>The role recorded in sec.AppUser for someone whose permissions come from ClinicHub (a label; checks use the permissions).</summary>
+    public static string RoleFor(IReadOnlyCollection<string> permissions) =>
+        permissions.Contains(Admin) ? "Admin" : permissions.Contains(FrontDesk) ? "Reception" : "Technologist";
 }

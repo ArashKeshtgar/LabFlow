@@ -8,23 +8,31 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("LabFlow")
-    ?? throw new InvalidOperationException("ConnectionStrings:LabFlow is not configured.");
-builder.Services.AddDbContext<LabFlowDbContext>(o => o.UseSqlServer(connectionString));
-
 builder.Services.AddHttpContextAccessor();
+
+// Connected to ClinicHub: staff sign in there, and the database is the lab's (or, configured so, the clinic's own).
+var connected = builder.Services.AddClinicHubSignIn(builder.Configuration);
+if (!connected)
+{
+    var connectionString = builder.Configuration.GetConnectionString("LabFlow")
+        ?? throw new InvalidOperationException("ConnectionStrings:LabFlow is not configured.");
+    builder.Services.AddDbContext<LabFlowDbContext>(o => o.UseSqlServer(connectionString));
+}
+
 builder.Services.AddScoped<AuditLogger>();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
-// Demo sign-in exists only in Development. Production will add Entra ID here instead,
-// and without it every protected endpoint simply returns 401.
-var auth = builder.Services.AddAuthentication(DemoAuthHandler.SchemeName);
-if (builder.Environment.IsDevelopment())
-    auth.AddScheme<AuthenticationSchemeOptions, DemoAuthHandler>(DemoAuthHandler.SchemeName, null);
+// Not connected, the demo sign-in exists only in Development; elsewhere every protected endpoint returns 401.
+if (!connected)
+{
+    var auth = builder.Services.AddAuthentication(DemoAuthHandler.SchemeName);
+    if (builder.Environment.IsDevelopment())
+        auth.AddScheme<AuthenticationSchemeOptions, DemoAuthHandler>(DemoAuthHandler.SchemeName, null);
+}
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(Policies.FrontDesk, p => p.RequireRole("Reception", "Collector", "Admin"));
+    .AddPolicy(Policies.FrontDesk, p => p.RequireClaim(LabPermissions.ClaimType, LabPermissions.FrontDesk, LabPermissions.Admin));
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -38,18 +46,53 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+// Inside the exception handler, so this answers before it turns the exception into a 500.
+// A database per clinic and no clinic named: a clear answer instead of a server error.
+app.Use(async (ctx, next) =>
+{
+    try { await next(); }
+    catch (NoClinicException ex) when (!ctx.Response.HasStarted)
+    {
+        ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await ctx.Response.WriteAsJsonAsync(new { title = ex.Message });
+    }
+});
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseAuthentication();
 app.UseAuthorization();
+if (connected)
+    app.UseCsrfHeaderCheck();
 app.UseRateLimiter();
 
 app.MapGet("/api/me", (ClaimsPrincipal user) => user.Identity?.IsAuthenticated == true
-    ? Results.Ok(new { userId = user.UserId(), name = user.Identity.Name, role = user.FindFirstValue(ClaimTypes.Role) })
-    : Results.Ok(new { userId = (int?)null, name = (string?)null, role = (string?)null }));
+    ? Results.Ok(new
+    {
+        userId = user.UserId(), name = user.Identity.Name, role = user.FindFirstValue(ClaimTypes.Role),
+        permissions = user.FindAll(LabPermissions.ClaimType).Select(c => c.Value).ToArray(),
+        clinic = user.FindFirstValue(ClinicHubClaims.ClinicName),
+    })
+    : Results.Ok(new { userId = (int?)null, name = (string?)null, role = (string?)null, permissions = Array.Empty<string>(), clinic = (string?)null }));
 
-if (app.Environment.IsDevelopment())
+// How people sign in, for the React app: "clinichub" or the development "demo" menu.
+app.MapGet("/api/auth/settings", (IServiceProvider services) => new
+{
+    signIn = connected ? "clinichub" : "demo",
+    perClinicDatabase = connected && services.GetRequiredService<LabDatabases>().PerClinic,
+});
+
+if (connected)
+{
+    app.MapGet("/api/auth/sso/start", (string? returnUrl) => Results.Challenge(
+        new AuthenticationProperties { RedirectUri = returnUrl is { Length: > 0 } && returnUrl.StartsWith('/') && !returnUrl.StartsWith("//") ? returnUrl : "/reception" },
+        [ClinicHubConnection.Scheme]));
+    // One sign-out: here and at ClinicHub.
+    app.MapGet("/api/auth/sso/signout", () => Results.SignOut(new AuthenticationProperties { RedirectUri = "/" },
+        [Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme, ClinicHubConnection.Scheme]));
+}
+
+if (app.Environment.IsDevelopment() && !connected)
 {
     // Feeds the role switcher in the React app.
     app.MapGet("/api/dev/users", async (LabFlowDbContext db) =>
