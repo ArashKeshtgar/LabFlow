@@ -69,6 +69,13 @@ dotnet run --project src/LabFlow.Api --launch-profile connected              # o
 dotnet run --project src/LabFlow.Api --launch-profile connected-per-clinic   # a database per clinic
 ```
 
+**Electronic orders.** Tests ordered at a ClinicHub visit arrive at `/fhir` as a FHIR R4 transaction Bundle (Patient,
+Practitioner, ServiceRequests coded with LOINC or LabFlow's own panel codes), authenticated with a token ClinicHub signs
+for LabFlow. They wait as electronic orders (`database/050_electronic_orders.sql`) until the patient comes to
+collection; reception's *Patient is here: make requisition* turns one into a requisition with the usual checks. The
+patient is matched by health card or name and birth date and registered if new; the physician by billing or CPSO
+number. Scripts from 050 on are safe to re-run and are applied to existing databases at start-up.
+
 A new clinic database has no collection sites until the clinic adds one (`core.Location` and its hours).
 Database tests (`ConnectedTests`) build throw-away databases and run only where a SQL Server is reachable
 (`LABFLOW_TEST_SQL`, or the local default instance); without one they are skipped.

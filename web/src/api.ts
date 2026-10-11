@@ -39,6 +39,12 @@ export type CreateRequisition = {
   isPregnant: boolean; pregnancyWeek: number | null; fastingHours: number | null; testIds: number[]
 }
 
+/** An order sent by a clinic through ClinicHub, waiting for the patient to come in (connected mode). */
+export type ElectronicOrder = {
+  electronicOrderId: number; sourceClinic: string; patientId: number; patient: string; mrn: string; dateOfBirth: string
+  practitioner: string; priority: 'Routine' | 'Stat'; clinicalNotes: string | null; receivedAt: string; tests: string[]
+}
+
 export type Requisition = {
   requisitionId: number; accessionNumber: string; patientId: number; patientName: string; mrn: string
   practitioner: string; payerType: string; priority: string; status: string; receivedAt: string
@@ -125,6 +131,9 @@ export const api = {
   createPatient: (body: PatientDetails) => request<PatientSummary>('POST', '/reception/patients', body),
   searchPractitioners: (text: string) => request<Practitioner[]>('GET', `/reception/practitioners?${q({ q: text })}`),
   createRequisition: (body: CreateRequisition) => request<Requisition>('POST', '/reception/requisitions', body),
+  electronicOrders: () => request<ElectronicOrder[]>('GET', '/reception/electronic-orders'),
+  requisitionFromOrder: (id: number, locationId: number) =>
+    request<Requisition>('POST', `/reception/electronic-orders/${id}/requisition`, { locationId }),
   requisition: (id: number) => request<Requisition>('GET', `/reception/requisitions/${id}`),
 }
 

@@ -44,6 +44,11 @@ builder.Services.AddRateLimiter(o =>
 
 var app = builder.Build();
 
+// One lab database, connected: apply the upgrade scripts (050 on) it may not have yet. A database per clinic is
+// upgraded when it is first opened.
+if (connected && !app.Services.GetRequiredService<LabDatabases>().PerClinic)
+    await app.Services.GetRequiredService<LabDatabases>().UpgradeAsync(builder.Configuration.GetConnectionString("LabFlow")!);
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 // Inside the exception handler, so this answers before it turns the exception into a 500.
@@ -102,6 +107,7 @@ if (app.Environment.IsDevelopment() && !connected)
 
 app.MapBookingEndpoints();
 app.MapReceptionEndpoints();
+app.MapOrderEndpoints();
 
 app.Run();
 

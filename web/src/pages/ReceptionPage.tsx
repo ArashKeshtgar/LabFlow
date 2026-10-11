@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { api, ApiError, torontoToday, type AppointmentRow, type Location, type PatientDetails, type PatientSummary, type Requisition } from '../api'
+import { api, ApiError, torontoToday, type AppointmentRow, type ElectronicOrder, type Location, type PatientDetails, type PatientSummary, type Requisition } from '../api'
 import { emptyPatient, PatientFields } from '../components/PatientFields'
 import { RequisitionForm } from '../components/RequisitionForm'
 import { RequisitionView } from '../components/RequisitionView'
@@ -88,6 +88,10 @@ export function ReceptionPage({ canUse, connected = false }: { canUse: boolean; 
       </header>
 
       {message && <div className="alert" role="alert">{message}</div>}
+
+      {connected && locationId != null && (
+        <ElectronicOrders locationId={locationId} onRequisition={r => { setPanel({ kind: 'view', requisition: r }); load() }} onError={setMessage} />
+      )}
 
       {panel.kind === 'walkin' && (
         <WalkIn
@@ -208,6 +212,49 @@ function WalkIn({ onPick, onCancel }: { onPick: (p: PatientSummary) => void; onC
           </div>
         </form>
       )}
+    </section>
+  )
+}
+
+/**
+ * Orders sent by clinics through ClinicHub. When the patient arrives, one click makes the order a requisition at this
+ * collection site, with the same checks as a requisition typed at the desk.
+ */
+function ElectronicOrders({ locationId, onRequisition, onError }: {
+  locationId: number; onRequisition: (r: Requisition) => void; onError: (m: string) => void
+}) {
+  const [orders, setOrders] = useState<ElectronicOrder[] | null>(null)
+  const [q, setQ] = useState('')
+  const load = useCallback(() => { api.electronicOrders().then(setOrders).catch(e => onError((e as Error).message)) }, [onError])
+  useEffect(() => { load(); const t = setInterval(load, 30_000); return () => clearInterval(t) }, [load])
+
+  if (!orders || orders.length === 0) return null
+  const shown = orders.filter(o => !q || `${o.patient} ${o.mrn}`.toLowerCase().includes(q.toLowerCase()))
+  return (
+    <section className="card">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>Electronic orders <span className="muted">({orders.length} waiting)</span></h2>
+        <input type="search" placeholder="Find patient" value={q} onChange={e => setQ(e.target.value)} aria-label="Find a patient's order" />
+      </div>
+      <table className="table">
+        <thead><tr><th>Received</th><th>Patient</th><th>Tests</th><th>Ordered by</th><th>Notes</th><th></th></tr></thead>
+        <tbody>
+          {shown.map(o => (
+            <tr key={o.electronicOrderId}>
+              <td className="muted">{new Date(o.receivedAt).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}
+                {o.priority === 'Stat' && <strong className="badge">STAT</strong>}</td>
+              <td>{o.patient}<div className="muted mono">{o.mrn} · born {o.dateOfBirth}</div></td>
+              <td>{o.tests.join(', ')}</td>
+              <td>{o.practitioner}<div className="muted">{o.sourceClinic}</div></td>
+              <td className="muted">{o.clinicalNotes}</td>
+              <td><button className="btn small primary" onClick={async () => {
+                try { onRequisition(await api.requisitionFromOrder(o.electronicOrderId, locationId)); load() }
+                catch (e) { onError((e as Error).message) }
+              }}>Patient is here: make requisition</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   )
 }

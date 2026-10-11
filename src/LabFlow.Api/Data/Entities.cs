@@ -238,3 +238,29 @@ public class AccessLog
     public string? IpAddress { get; set; }
     public Guid? CorrelationId { get; set; }
 }
+
+/// <summary>An order from a clinic system (ClinicHub), waiting for the patient to come to collection. See database/050.</summary>
+public class ElectronicOrder
+{
+    public int ElectronicOrderId { get; set; }
+    public string SourceClinic { get; set; } = "";
+    public string ExternalId { get; set; } = "";
+    public int PatientId { get; set; }
+    public Patient Patient { get; set; } = null!;
+    public int PractitionerId { get; set; }
+    public Practitioner Practitioner { get; set; } = null!;
+    public string Priority { get; set; } = "Routine";
+    public string? ClinicalNotes { get; set; }
+    public string Status { get; set; } = "Waiting";
+    public DateTime ReceivedAt { get; set; }
+    public int? RequisitionId { get; set; }
+    public List<ElectronicOrderItem> Items { get; set; } = [];
+}
+
+public class ElectronicOrderItem
+{
+    public int ElectronicOrderId { get; set; }
+    public int TestId { get; set; }
+    public Test Test { get; set; } = null!;
+    public string ExternalId { get; set; } = "";
+}

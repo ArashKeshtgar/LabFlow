@@ -106,17 +106,41 @@ public class LabDatabases(IConfiguration config, IOptions<ClinicHubOptions> opti
         await db.OpenAsync();
         await using (var check = new SqlCommand("SELECT COUNT(*) FROM sys.schemas WHERE name = 'lab'", db))
             if ((int)(await check.ExecuteScalarAsync())! == 1)
+            {
+                // Built before: only the upgrade scripts, which are safe to run again.
+                await RunScriptsAsync(db, name, UpgradeScripts());
                 return;
+            }
         // Schema, sequences and reference data. Not the database itself (made above), the synthetic patients, or the
         // warehouse and legacy-test mapping, which belong to migrating the original lab's data, not to a new clinic.
-        var scripts = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "database"), "*.sql")
-            .Select(Path.GetFileName)
-            .Where(f => Regex.IsMatch(f!, @"^\d{3}_") && !f!.StartsWith("001_") && !f.Contains("_seed_demo") && !f.Contains("_etl_") && !f.Contains("_legacy_"))
+        await RunScriptsAsync(db, name, Scripts(f => !f.StartsWith("001_") && !f.Contains("_seed_demo") && !f.Contains("_etl_") && !f.Contains("_legacy_")));
+    }
+
+    /// <summary>
+    /// Scripts from 050 on change existing databases and are written to be run again safely (IF OBJECT_ID … IS NULL).
+    /// deploy.ps1 runs them on a new database like any other; LabFlow runs them on start-up for a database built before.
+    /// </summary>
+    public static IEnumerable<string> UpgradeScripts() => Scripts(f => string.CompareOrdinal(f, "050") >= 0);
+
+    private static IEnumerable<string> Scripts(Func<string, bool> include) =>
+        Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "database"), "*.sql")
+            .Select(f => Path.GetFileName(f))
+            .Where(f => Regex.IsMatch(f, @"^\d{3}_") && include(f))
             .Order()
-            .Select(f => Path.Combine(AppContext.BaseDirectory, "database", f!));
+            .Select(f => Path.Combine(AppContext.BaseDirectory, "database", f));
+
+    public async Task UpgradeAsync(string connectionString)
+    {
+        await using var db = new SqlConnection(connectionString);
+        await db.OpenAsync();
+        await RunScriptsAsync(db, db.Database, UpgradeScripts());
+    }
+
+    private async Task RunScriptsAsync(SqlConnection db, string name, IEnumerable<string> scripts)
+    {
         foreach (var script in scripts)
         {
-            logger.LogInformation("Building {Database}: {Script}", name, Path.GetFileName(script));
+            logger.LogInformation("{Database}: {Script}", name, Path.GetFileName(script));
             foreach (var batch in Regex.Split(await File.ReadAllTextAsync(script), @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase))
                 if (!string.IsNullOrWhiteSpace(batch))
                     await Exec(db, batch);
@@ -136,6 +160,10 @@ public class NoClinicException() : Exception("Which clinic? Sign in through Clin
 public static class ClinicHubConnection
 {
     public const string Scheme = "ClinicHub";
+
+    /// <summary>ClinicHub calling LabFlow itself (orders): a bearer token signed by ClinicHub, for this audience.</summary>
+    public const string ServiceScheme = "ClinicHubService";
+    public const string OrdersPolicy = "clinichub.orders";
     public const string CsrfHeader = "X-LabFlow";
 
     public static bool IsConnected(this IServiceProvider services) =>
@@ -155,7 +183,9 @@ public static class ClinicHubConnection
         {
             var databases = sp.GetRequiredService<LabDatabases>();
             var http = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
-            var slug = http?.User.FindFirstValue(ClinicHubClaims.Clinic) ?? http?.Request.Headers[ClinicHubClaims.ClinicHeader].FirstOrDefault();
+            // A person's session says "clinic"; ClinicHub's own service token says "clinic_slug"; public booking may name one.
+            var slug = http?.User.FindFirstValue(ClinicHubClaims.Clinic) ?? http?.User.FindFirstValue("clinic_slug")
+                ?? http?.Request.Headers[ClinicHubClaims.ClinicHeader].FirstOrDefault();
             if (databases.PerClinic && http?.User.Identity?.IsAuthenticated != true)
             {
                 if (!LabDatabases.IsValidSlug(slug) || !databases.ExistsAsync(slug!).GetAwaiter().GetResult())
@@ -178,6 +208,13 @@ public static class ClinicHubConnection
                 o.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; };
                 o.Events.OnValidatePrincipal = ValidateAsync;
             })
+            .AddJwtBearer(ServiceScheme, o =>
+            {
+                o.Authority = hub.Authority;
+                o.Audience = hub.ClientId;
+                o.RequireHttpsMetadata = hub.RequireHttpsMetadata;
+                o.MapInboundClaims = false;
+            })
             .AddOpenIdConnect(Scheme, "ClinicHub", o =>
             {
                 o.Authority = hub.Authority;
@@ -199,6 +236,13 @@ public static class ClinicHubConnection
                 o.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
                 o.NonceCookie.SameSite = SameSiteMode.Lax;
                 o.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                // Keep only what is used later: the refresh token (re-checks) and the id token (sign-out hint). The access token
+                // is not used here and would only make the cookie bigger (on localhost every app's cookies travel together).
+                o.Events.OnTicketReceived = ctx =>
+                {
+                    ctx.Properties!.StoreTokens(ctx.Properties.GetTokens().Where(t => t.Name is "refresh_token" or "id_token").ToList());
+                    return Task.CompletedTask;
+                };
                 o.Events.OnTokenValidated = async ctx => ctx.Principal = await ToLocalPrincipal(ctx.HttpContext.RequestServices, ctx.Principal!);
                 o.Events.OnRemoteFailure = ctx =>
                 {
@@ -209,6 +253,9 @@ public static class ClinicHubConnection
                     return Task.CompletedTask;
                 };
             });
+        services.AddAuthorizationBuilder().AddPolicy(OrdersPolicy, p => p
+            .AddAuthenticationSchemes(ServiceScheme).RequireAuthenticatedUser()
+            .RequireClaim("scope", "orders").RequireAssertion(ctx => LabDatabases.IsValidSlug(ctx.User.FindFirstValue("clinic_slug"))));
         return true;
     }
 

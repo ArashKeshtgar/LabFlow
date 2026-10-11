@@ -179,7 +179,7 @@ public static class ReceptionEndpoints
         return Results.NoContent();
     }
 
-    private static async Task<IResult> CreateRequisitionAsync(
+    internal static async Task<IResult> CreateRequisitionAsync(
         CreateRequisitionRequest req, ClaimsPrincipal user, LabFlowDbContext db, AuditLogger audit, CancellationToken ct)
     {
         var v = new Validator();

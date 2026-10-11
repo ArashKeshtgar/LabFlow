@@ -21,6 +21,7 @@ public class LabFlowDbContext(DbContextOptions<LabFlowDbContext> options) : DbCo
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AccessLog> AccessLogs => Set<AccessLog>();
+    public DbSet<ElectronicOrder> ElectronicOrders => Set<ElectronicOrder>();
 
     public async Task<int> NextSequenceValueAsync(Sequence sequence, CancellationToken ct)
     {
@@ -107,6 +108,17 @@ public class LabFlowDbContext(DbContextOptions<LabFlowDbContext> options) : DbCo
             e.ToTable("Appointment", "sched");
             e.Property(x => x.RowVer).IsRowVersion();
             e.HasOne(x => x.Requisition).WithOne().HasForeignKey<Requisition>(x => x.AppointmentId);
+        });
+
+        b.Entity<ElectronicOrder>(e =>
+        {
+            e.ToTable("ElectronicOrder", "lab");
+            e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.ElectronicOrderId);
+        });
+        b.Entity<ElectronicOrderItem>(e =>
+        {
+            e.ToTable("ElectronicOrderItem", "lab");
+            e.HasKey(x => new { x.ElectronicOrderId, x.TestId });
         });
 
         b.Entity<Requisition>(e =>
