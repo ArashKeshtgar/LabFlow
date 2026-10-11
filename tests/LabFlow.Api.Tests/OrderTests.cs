@@ -194,6 +194,76 @@ public class ResultTests(PerClinicFactory factory) : IClassFixture<PerClinicFact
     }
 }
 
+public class CancelTests(PerClinicFactory factory) : IClassFixture<PerClinicFactory>
+{
+    private static async Task<JsonNode> Json(HttpResponseMessage res)
+    {
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.True(res.IsSuccessStatusCode, $"{(int)res.StatusCode}: {body}");
+        return JsonNode.Parse(body)!;
+    }
+
+    /// <summary>What ClinicHub sends to withdraw an order: the ServiceRequest again, revoked.</summary>
+    private static string Revoke(string id) => new JsonObject
+    {
+        ["resourceType"] = "Bundle", ["type"] = "transaction",
+        ["entry"] = new JsonArray(new JsonObject
+        {
+            ["resource"] = new JsonObject
+            {
+                ["resourceType"] = "ServiceRequest", ["status"] = "revoked", ["intent"] = "order",
+                ["identifier"] = new JsonArray(new JsonObject { ["system"] = "urn:clinichub:harbourview:service-request", ["value"] = id }),
+                ["note"] = new JsonArray(new JsonObject { ["text"] = "Ordered in error" }),
+            },
+            ["request"] = new JsonObject { ["method"] = "PUT", ["url"] = $"ServiceRequest?identifier=urn:clinichub:harbourview:service-request|{id}" },
+        }),
+    }.ToJsonString();
+
+    private Task<HttpResponseMessage> Send(string bundle) => OrderTests.Send(factory, bundle, ConnectedFactory.ServiceToken("harbourview"));
+
+    [SqlFact]
+    public async Task A_waiting_order_loses_the_test_and_a_requisition_cancels_it_until_results_are_in()
+    {
+        await Json(await Send(OrderTests.Bundle("R970", ("urn:labflow:test-code", "CBC"), ("http://loinc.org", "4548-4"), ("http://loinc.org", "2857-1"))));
+        await using (var conn = new SqlConnection(factory.ClinicDatabase("harbourview")))
+        {
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand("IF NOT EXISTS (SELECT 1 FROM core.Location) INSERT core.Location (Name, AddressLine1, City, PostalCode) VALUES (N'Site', N'1 St', N'Toronto', 'M5V 0A1')", conn);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        // Still waiting: the test comes off the order; sent again, the same answer.
+        await Json(await Send(Revoke("R970-2")));
+        await Json(await Send(Revoke("R970-2")));
+        factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk", "results.enter");
+        var lab = await factory.SignInAsync("50", "Lab Tech", "harbourview", "frontdesk", "results.enter");
+        var order = (await Json(await lab.GetAsync("/api/reception/electronic-orders"))).AsArray().Single()!;
+        Assert.Equal(2, order["tests"]!.AsArray().Count);
+
+        var location = (int)(await Json(await lab.GetAsync("/api/locations")))[0]!["locationId"]!;
+        var requisition = (int)(await Json(await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{(int)order["electronicOrderId"]!}/requisition", new { locationId = location })))["requisitionId"]!;
+        var sheet = await Json(await lab.GetAsync($"/api/lab/requisitions/{requisition}"));
+        Assert.Equal(["A1C", "CBC"], sheet["items"]!.AsArray().Select(i => (string)i!["code"]!).Order());
+
+        // A result entered for the CBC: too late to cancel it; the A1c, not started, can still go.
+        var cbc = sheet["items"]!.AsArray().Single(i => (string)i!["code"]! == "CBC")!;
+        var hgb = cbc["analytes"]!.AsArray().Single(a => (string)a!["code"]! == "HGB")!;
+        await Json(await lab.PutAsJsonAsync($"/api/lab/requisitions/{requisition}/results", new
+        {
+            results = new[] { new { requisitionItemId = (int)cbc["requisitionItemId"]!, testId = (int)hgb["testId"]!, value = "130" } },
+        }));
+        var refused = await Send(Revoke("R970-0"));
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Contains("call the lab", await refused.Content.ReadAsStringAsync());
+
+        await Json(await Send(Revoke("R970-1")));
+        sheet = await Json(await lab.GetAsync($"/api/lab/requisitions/{requisition}"));
+        Assert.Equal(["CBC"], sheet["items"]!.AsArray().Select(i => (string)i!["code"]!));
+
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(Revoke("R999-0"))).StatusCode);
+    }
+}
+
 public class OneLabOrderTests(OneLabFactory factory) : IClassFixture<OneLabFactory>
 {
     [SqlFact]

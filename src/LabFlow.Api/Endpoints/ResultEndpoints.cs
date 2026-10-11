@@ -221,10 +221,10 @@ public static class ResultEndpoints
     private static JsonObject ResultBundle(Requisition requisition, ElectronicOrder order, List<LabResult> results, string status, DateTime now)
     {
         var entries = new JsonArray();
-        foreach (var ordered in order.Items)
+        foreach (var ordered in order.Items.Where(i => i.CancelledAt == null))
         {
             var item = requisition.Items.SingleOrDefault(i => i.TestId == ordered.TestId);
-            if (item is null)
+            if (item is null || item.Status == "Cancelled")
                 continue;
             var refs = new JsonArray();
             foreach (var t in Analytes(item.Test))

@@ -196,6 +196,7 @@ public class RequisitionItem
     public string Status { get; set; } = "Ordered";
     public bool IsInsured { get; set; }
     public decimal? Price { get; set; }
+    public string? CancelReason { get; set; }
 }
 
 public class Invoice
@@ -263,6 +264,10 @@ public class ElectronicOrderItem
     public int TestId { get; set; }
     public Test Test { get; set; } = null!;
     public string ExternalId { get; set; } = "";
+
+    /// <summary>Withdrawn by the clinic (database/052).</summary>
+    public DateTime? CancelledAt { get; set; }
+    public string? CancelReason { get; set; }
 }
 
 /// <summary>One analyte's result (FHIR Observation), lab.Result. For a panel, each member gets its own row under the panel's item.</summary>

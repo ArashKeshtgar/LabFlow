@@ -82,6 +82,11 @@ FHIR DiagnosticReport per ordered test with an Observation per analyte (LOINC, v
 first and `amended` for a correction. Messages wait in `lab.OutboundMessage` (`database/051_outbound_messages.sql`)
 until delivered; LabFlow authenticates with its own client id and secret (client credentials, scope `results`).
 
+**Cancellation.** ClinicHub withdraws a test by sending its ServiceRequest again with status `revoked`. A waiting
+order loses the test (`database/052_order_cancellation.sql` keeps it, marked cancelled, with the reason); on a
+requisition the item is cancelled if no result has been entered. Otherwise LabFlow answers `409` and the clinic is
+told to call the lab.
+
 A new clinic database has no collection sites until the clinic adds one (`core.Location` and its hours).
 Database tests (`ConnectedTests`) build throw-away databases and run only where a SQL Server is reachable
 (`LABFLOW_TEST_SQL`, or the local default instance); without one they are skipped.

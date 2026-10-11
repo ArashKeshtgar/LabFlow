@@ -11,7 +11,8 @@ namespace LabFlow.Api.Endpoints;
 /// <summary>
 /// Electronic orders from ClinicHub (connected mode). ClinicHub posts a FHIR R4 transaction Bundle (the patient,
 /// the ordering physician, one ServiceRequest per test) to /fhir. The order waits until the patient comes to
-/// collection, where reception turns it into a requisition.
+/// collection, where reception turns it into a requisition. The clinic withdraws a test by sending its
+/// ServiceRequest again with status "revoked".
 /// </summary>
 public static class OrderEndpoints
 {
@@ -42,6 +43,11 @@ public static class OrderEndpoints
             if ((string?)bundle?["resourceType"] != "Bundle" || (string?)bundle["type"] != "transaction")
                 return Outcome("Expected a FHIR transaction Bundle.");
             var entries = bundle["entry"]?.AsArray().Select(e => e?["resource"]).ToList() ?? [];
+            var revoked = entries.Where(r => (string?)r?["resourceType"] == "ServiceRequest" && (string?)r?["status"] == "revoked").ToList();
+            if (revoked.Count > 0)
+                return revoked.Count == entries.Count
+                    ? await CancelAsync(db, audit, slug, revoked!, ct)
+                    : Outcome("A Bundle that withdraws orders carries only the revoked ServiceRequests.");
             var patient = entries.FirstOrDefault(r => (string?)r?["resourceType"] == "Patient");
             var practitioner = entries.FirstOrDefault(r => (string?)r?["resourceType"] == "Practitioner");
             var requests = entries.Where(r => (string?)r?["resourceType"] == "ServiceRequest").ToList();
@@ -119,7 +125,7 @@ public static class OrderEndpoints
                 .OrderByDescending(o => o.Priority == "Stat").ThenBy(o => o.ReceivedAt)
                 .Select(o => new ElectronicOrderRow(o.ElectronicOrderId, o.SourceClinic, o.PatientId, o.Patient.LastName + ", " + o.Patient.FirstName,
                     o.Patient.Mrn, o.Patient.DateOfBirth, "Dr. " + o.Practitioner.FirstName + " " + o.Practitioner.LastName, o.Priority, o.ClinicalNotes,
-                    o.ReceivedAt, o.Items.Select(i => i.Test.NameEn).ToArray(), o.Status, o.RequisitionId))
+                    o.ReceivedAt, o.Items.Where(i => i.CancelledAt == null).Select(i => i.Test.NameEn).ToArray(), o.Status, o.RequisitionId))
                 .ToListAsync(ct));
 
         // The patient is at the collection desk: the order becomes a requisition, with the same checks as one typed at reception.
@@ -133,7 +139,7 @@ public static class OrderEndpoints
 
             var created = await ReceptionEndpoints.CreateRequisitionAsync(new ReceptionEndpoints.CreateRequisitionRequest(
                 order.PatientId, order.PractitionerId, req.LocationId, null, SlotCalculator.TodayInToronto(DateTime.UtcNow), order.Priority,
-                order.ClinicalNotes, false, null, null, order.Items.Select(i => i.TestId).ToArray()), user, db, audit, ct);
+                order.ClinicalNotes, false, null, null, order.Items.Where(i => i.CancelledAt == null).Select(i => i.TestId).ToArray()), user, db, audit, ct);
             if (created is not Created<ReceptionEndpoints.RequisitionDto> ok)
                 return created;
             order.Status = "Requisitioned";
@@ -141,6 +147,67 @@ public static class OrderEndpoints
             await db.SaveChangesAsync(ct);
             return created;
         });
+    }
+
+    /// <summary>
+    /// The clinic withdraws tests. Still waiting: struck from the order. On a requisition: the item is cancelled unless a
+    /// result has been entered, in which case the answer is 409 and the clinic is told to call the lab. All or nothing.
+    /// </summary>
+    private static async Task<IResult> CancelAsync(LabFlowDbContext db, AuditLogger audit, string slug, List<JsonNode> revoked, CancellationToken ct)
+    {
+        var system = $"urn:clinichub:{slug}:service-request";
+        var now = DateTime.UtcNow;
+        var done = new List<(ElectronicOrder Order, ElectronicOrderItem Item, string? Reason)>();
+        foreach (var sr in revoked)
+        {
+            var id = (string?)sr["identifier"]?.AsArray().FirstOrDefault(i => (string?)i?["system"] == system)?["value"];
+            var item = id is null ? null : await db.ElectronicOrders.Where(o => o.SourceClinic == slug).SelectMany(o => o.Items)
+                .Include(i => i.Test).SingleOrDefaultAsync(i => i.ExternalId == id, ct);
+            if (item is null)
+                return Outcome($"No order {id ?? "(no identifier)"} from this clinic.", StatusCodes.Status404NotFound, "not-found");
+            var order = await db.ElectronicOrders.Include(o => o.Items).SingleAsync(o => o.ElectronicOrderId == item.ElectronicOrderId, ct);
+            item = order.Items.Single(i => i.TestId == item.TestId);
+            if (item.CancelledAt is not null)
+                continue;   // sent again: already withdrawn
+            if (order.RequisitionId is { } requisitionId)
+            {
+                var line = await db.RequisitionItems.SingleOrDefaultAsync(i => i.RequisitionId == requisitionId && i.TestId == item.TestId, ct);
+                if (line is not null && line.Status != "Cancelled"
+                    && (line.Status is not ("Ordered" or "Collected") || await db.Results.AnyAsync(r => r.RequisitionItemId == line.RequisitionItemId, ct)))
+                    return Outcome($"Results have been entered for {(await db.Tests.SingleAsync(t => t.TestId == item.TestId, ct)).NameEn}; call the lab to cancel.",
+                        StatusCodes.Status409Conflict, "business-rule");
+            }
+            done.Add((order, item, ((string?)sr["note"]?[0]?["text"])?.Trim() is { Length: > 0 } why ? why[..Math.Min(why.Length, 200)] : null));
+        }
+
+        foreach (var (order, item, reason) in done)
+        {
+            item.CancelledAt = now;
+            item.CancelReason = reason ?? "Cancelled by the ordering clinic";
+            if (order.RequisitionId is { } requisitionId)
+            {
+                var requisition = await db.Requisitions.Include(r => r.Items).SingleAsync(r => r.RequisitionId == requisitionId, ct);
+                var line = requisition.Items.SingleOrDefault(i => i.TestId == item.TestId);
+                if (line is not null)
+                {
+                    line.Status = "Cancelled";
+                    line.CancelReason = item.CancelReason;
+                }
+                if (requisition.Items.All(i => i.Status == "Cancelled"))
+                    requisition.Status = "Cancelled";
+                requisition.UpdatedAt = now;
+            }
+            else if (order.Items.All(i => i.CancelledAt is not null))
+                order.Status = "Cancelled";
+            audit.Log("Update", "ElectronicOrder", order.ElectronicOrderId, order.PatientId, new { cancelled = item.ExternalId, from = slug, reason });
+        }
+        await db.SaveChangesAsync(ct);
+
+        var response = new JsonArray();
+        foreach (var _ in revoked)
+            response.Add(new JsonObject { ["response"] = new JsonObject { ["status"] = "200 OK" } });
+        return Results.Text(new JsonObject { ["resourceType"] = "Bundle", ["type"] = "transaction-response", ["entry"] = response }.ToJsonString(),
+            "application/fhir+json");
     }
 
     /// <summary>By Ontario health card, then by name and date of birth; otherwise registered from the order.</summary>
@@ -189,9 +256,9 @@ public static class OrderEndpoints
 
     private static JsonObject Created(string location) => new() { ["status"] = "201 Created", ["location"] = location };
 
-    private static IResult Outcome(string diagnostics) => Results.Text(new JsonObject
+    private static IResult Outcome(string diagnostics, int status = StatusCodes.Status400BadRequest, string code = "invalid") => Results.Text(new JsonObject
     {
         ["resourceType"] = "OperationOutcome",
-        ["issue"] = new JsonArray(new JsonObject { ["severity"] = "error", ["code"] = "invalid", ["diagnostics"] = diagnostics }),
-    }.ToJsonString(), "application/fhir+json", statusCode: StatusCodes.Status400BadRequest);
+        ["issue"] = new JsonArray(new JsonObject { ["severity"] = "error", ["code"] = code, ["diagnostics"] = diagnostics }),
+    }.ToJsonString(), "application/fhir+json", statusCode: status);
 }
