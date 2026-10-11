@@ -3,7 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Nodes;
+using LabFlow.Api.Auth;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LabFlow.Api.Tests;
 
@@ -109,6 +111,86 @@ public class OrderTests(PerClinicFactory factory) : IClassFixture<PerClinicFacto
         Assert.Equal(HttpStatusCode.Unauthorized, (await Send(factory, bundle, null)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await Send(factory, bundle, ConnectedFactory.ServiceToken("harbourview", audience: "clinicreport"))).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Send(factory, bundle, ConnectedFactory.ServiceToken("harbourview", scope: "profile"))).StatusCode);
+    }
+}
+
+public class ResultTests(PerClinicFactory factory) : IClassFixture<PerClinicFactory>
+{
+    private static async Task<JsonNode> Json(HttpResponseMessage res)
+    {
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.True(res.IsSuccessStatusCode, $"{(int)res.StatusCode}: {body}");
+        return JsonNode.Parse(body)!;
+    }
+
+    [SqlFact]
+    public async Task Released_results_go_back_to_ClinicHub_and_a_correction_follows()
+    {
+        await Json(await OrderTests.Send(factory, OrderTests.Bundle("R950", ("urn:labflow:test-code", "CBC"), ("http://loinc.org", "4548-4")), ConnectedFactory.ServiceToken("harbourview")));
+        await using (var conn = new SqlConnection(factory.ClinicDatabase("harbourview")))
+        {
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand("IF NOT EXISTS (SELECT 1 FROM core.Location) INSERT core.Location (Name, AddressLine1, City, PostalCode) VALUES (N'Site', N'1 St', N'Toronto', 'M5V 0A1')", conn);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk", "results.enter");
+        var lab = await factory.SignInAsync("40", "Lab Tech", "harbourview", "frontdesk", "results.enter");
+        var order = (await Json(await lab.GetAsync("/api/reception/electronic-orders"))).AsArray().Single(o => (string)o!["clinicalNotes"]! != null)!;
+        var location = (int)(await Json(await lab.GetAsync("/api/locations")))[0]!["locationId"]!;
+        var requisition = (int)(await Json(await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{(int)order["electronicOrderId"]!}/requisition", new { locationId = location })))["requisitionId"]!;
+
+        var sheet = await Json(await lab.GetAsync($"/api/lab/requisitions/{requisition}"));
+        var cbc = sheet["items"]!.AsArray().Single(i => (string)i!["code"]! == "CBC")!;
+        Assert.Equal(["HGB", "PLT", "WBC"], cbc["analytes"]!.AsArray().Select(a => (string)a!["code"]!).Order());
+        int Item(string code) => (int)sheet["items"]!.AsArray().Single(i => (string)i!["code"]! == code)!["requisitionItemId"]!;
+        int Test(string item, string code) => (int)sheet["items"]!.AsArray().Single(i => (string)i!["code"]! == item)!["analytes"]!.AsArray().Single(a => (string)a!["code"]! == code)!["testId"]!;
+        object Value(string item, string code, string value) => new { requisitionItemId = Item(item), testId = Test(item, code), value };
+
+        // Not everything entered yet: no release.
+        await Json(await lab.PutAsJsonAsync($"/api/lab/requisitions/{requisition}/results", new { results = new[] { Value("CBC", "HGB", "98") } }));
+        Assert.Equal(HttpStatusCode.Conflict, (await lab.PostAsync($"/api/lab/requisitions/{requisition}/release", null)).StatusCode);
+
+        var entered = await Json(await lab.PutAsJsonAsync($"/api/lab/requisitions/{requisition}/results", new
+        {
+            results = new[] { Value("CBC", "WBC", "6.2"), Value("CBC", "PLT", "250"), Value("A1C", "A1C", "7.4") },
+        }));
+        var hgb = entered["items"]!.AsArray().Single(i => (string)i!["code"]! == "CBC")!["analytes"]!.AsArray().Single(a => (string)a!["code"]! == "HGB")!;
+        Assert.Equal("L", (string)hgb["flag"]!);
+        Assert.NotNull(hgb["range"]);
+        Assert.Equal(HttpStatusCode.BadRequest, (await lab.PutAsJsonAsync($"/api/lab/requisitions/{requisition}/results", new { results = new[] { Value("CBC", "WBC", "lots") } })).StatusCode);
+
+        var released = await Json(await lab.PostAsync($"/api/lab/requisitions/{requisition}/release", null));
+        Assert.Equal("Final", (string)released["status"]!);
+        Assert.Equal(1, (int)released["reportVersion"]!);
+
+        var sender = factory.Services.GetRequiredService<ResultSender>();
+        Assert.Equal(1, await sender.SendAsync());
+        var bundle = factory.Hub.Results.Last();
+        var reports = bundle["entry"]!.AsArray().Select(e => e!["resource"]!).Where(r => (string)r["resourceType"]! == "DiagnosticReport").ToList();
+        Assert.Equal(2, reports.Count);
+        Assert.All(reports, r => Assert.Equal("final", (string)r["status"]!));
+        Assert.Equal(["R950-0", "R950-1"], reports.Select(r => (string)r["basedOn"]![0]!["identifier"]!["value"]!).Order());
+        Assert.All(reports, r => Assert.Equal("urn:clinichub:harbourview:service-request", (string)r["basedOn"]![0]!["identifier"]!["system"]!));
+        var hemoglobin = bundle["entry"]!.AsArray().Select(e => e!["resource"]!).Single(r => (string)r["resourceType"]! == "Observation" && (string)r["code"]!["text"]! == "Hemoglobin");
+        Assert.Equal("718-7", (string)hemoglobin["code"]!["coding"]![0]!["code"]!);
+        Assert.Equal(98m, hemoglobin["valueQuantity"]!["value"]!.GetValue<decimal>());
+        Assert.Equal("L", (string)hemoglobin["interpretation"]![0]!["coding"]![0]!["code"]!);
+
+        // A correction: released again as an amended report.
+        await Json(await lab.PutAsJsonAsync($"/api/lab/requisitions/{requisition}/results", new { results = new[] { Value("A1C", "A1C", "7.1") } }));
+        var again = await Json(await lab.PostAsync($"/api/lab/requisitions/{requisition}/release", null));
+        Assert.Equal(2, (int)again["reportVersion"]!);
+        Assert.Equal(1, await sender.SendAsync());
+        Assert.All(factory.Hub.Results.Last()["entry"]!.AsArray().Select(e => e!["resource"]!).Where(r => (string)r["resourceType"]! == "DiagnosticReport"),
+            r => Assert.Equal("amended", (string)r["status"]!));
+    }
+
+    [SqlFact]
+    public async Task Only_lab_staff_with_results_entry_see_the_worklist()
+    {
+        factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk");
+        var desk = await factory.SignInAsync("41", "Desk", "harbourview", "frontdesk");
+        Assert.Equal(HttpStatusCode.Forbidden, (await desk.GetAsync("/api/lab/worklist")).StatusCode);
     }
 }
 

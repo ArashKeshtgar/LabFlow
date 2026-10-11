@@ -264,3 +264,72 @@ public class ElectronicOrderItem
     public Test Test { get; set; } = null!;
     public string ExternalId { get; set; } = "";
 }
+
+/// <summary>One analyte's result (FHIR Observation), lab.Result. For a panel, each member gets its own row under the panel's item.</summary>
+public class LabResult
+{
+    public long ResultId { get; set; }
+    public int RequisitionItemId { get; set; }
+    public int TestId { get; set; }
+    public Test Test { get; set; } = null!;
+    public decimal? ValueNumeric { get; set; }
+    public string? ValueText { get; set; }
+    public string? UnitCode { get; set; }
+
+    /// <summary>The range in force when resulted, copied so a later change never rewrites a released report.</summary>
+    public decimal? RefLow { get; set; }
+    public decimal? RefHigh { get; set; }
+    public string? RefText { get; set; }
+
+    /// <summary>HL7 table 0078: N, L, H, LL, HH, A.</summary>
+    public string? AbnormalFlag { get; set; }
+    public string Status { get; set; } = "Preliminary";
+    public string? Comment { get; set; }
+    public DateTime ResultedAt { get; set; }
+    public int? ResultedByUserId { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public int? VerifiedByUserId { get; set; }
+    public byte[] RowVer { get; set; } = [];
+}
+
+/// <summary>A released report for a requisition (FHIR DiagnosticReport), lab.Report. A correction issues a new version.</summary>
+public class LabReport
+{
+    public int ReportId { get; set; }
+    public int RequisitionId { get; set; }
+    public short Version { get; set; }
+    public string Status { get; set; } = "Final";
+    public DateTime IssuedAt { get; set; }
+    public int? IssuedByUserId { get; set; }
+}
+
+public class ReferenceRange
+{
+    public int ReferenceRangeId { get; set; }
+    public int TestId { get; set; }
+    public string Sex { get; set; } = "U";
+    public int AgeFromDays { get; set; }
+    public int AgeToDays { get; set; }
+    public decimal? Low { get; set; }
+    public decimal? High { get; set; }
+    public decimal? CriticalLow { get; set; }
+    public decimal? CriticalHigh { get; set; }
+    public string? DisplayText { get; set; }
+    public DateOnly EffectiveFrom { get; set; }
+    public DateOnly? EffectiveTo { get; set; }
+}
+
+/// <summary>A message to ClinicHub waiting to be sent (database/051).</summary>
+public class OutboundMessage
+{
+    public int OutboundMessageId { get; set; }
+    public string Destination { get; set; } = "ClinicHub";
+    public string Kind { get; set; } = "";
+    public int? RequisitionId { get; set; }
+    public string PayloadJson { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime? SentAt { get; set; }
+    public int Attempts { get; set; }
+    public DateTime? NextAttemptAt { get; set; }
+    public string? LastError { get; set; }
+}

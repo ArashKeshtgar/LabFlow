@@ -60,6 +60,9 @@ public static class Policies
 {
     /// <summary>Reception and collection: the frontdesk or admin permission.</summary>
     public const string FrontDesk = nameof(FrontDesk);
+
+    /// <summary>Entering, correcting and releasing results: the results.enter or admin permission.</summary>
+    public const string ResultsEntry = nameof(ResultsEntry);
 }
 
 /// <summary>
@@ -71,19 +74,21 @@ public static class LabPermissions
     public const string ClaimType = "permission";
     public const string FrontDesk = "frontdesk";
     public const string ResultsView = "results.view";
+    public const string ResultsEnter = "results.enter";
     public const string Admin = "admin";
 
-    public static readonly string[] All = [FrontDesk, ResultsView, Admin];
+    public static readonly string[] All = [FrontDesk, ResultsView, ResultsEnter, Admin];
 
     public static string[] ForRole(string role) => role switch
     {
         "Admin" => All,
         "Reception" or "Collector" => [FrontDesk],
-        "Technologist" or "Pathologist" or "Practitioner" => [ResultsView],
+        "Technologist" or "Pathologist" => [ResultsView, ResultsEnter],
+        "Practitioner" => [ResultsView],
         _ => [],
     };
 
     /// <summary>The role recorded in sec.AppUser for someone whose permissions come from ClinicHub (a label; checks use the permissions).</summary>
     public static string RoleFor(IReadOnlyCollection<string> permissions) =>
-        permissions.Contains(Admin) ? "Admin" : permissions.Contains(FrontDesk) ? "Reception" : "Technologist";
+        permissions.Contains(Admin) ? "Admin" : permissions.Contains(ResultsEnter) ? "Technologist" : permissions.Contains(FrontDesk) ? "Reception" : "Technologist";
 }

@@ -22,6 +22,10 @@ public class LabFlowDbContext(DbContextOptions<LabFlowDbContext> options) : DbCo
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AccessLog> AccessLogs => Set<AccessLog>();
     public DbSet<ElectronicOrder> ElectronicOrders => Set<ElectronicOrder>();
+    public DbSet<LabResult> Results => Set<LabResult>();
+    public DbSet<LabReport> Reports => Set<LabReport>();
+    public DbSet<ReferenceRange> ReferenceRanges => Set<ReferenceRange>();
+    public DbSet<OutboundMessage> OutboundMessages => Set<OutboundMessage>();
 
     public async Task<int> NextSequenceValueAsync(Sequence sequence, CancellationToken ct)
     {
@@ -109,6 +113,34 @@ public class LabFlowDbContext(DbContextOptions<LabFlowDbContext> options) : DbCo
             e.Property(x => x.RowVer).IsRowVersion();
             e.HasOne(x => x.Requisition).WithOne().HasForeignKey<Requisition>(x => x.AppointmentId);
         });
+
+        b.Entity<LabResult>(e =>
+        {
+            // System-versioned: a correction keeps the previous value in history.Result.
+            e.ToTable("Result", "lab", t => t.IsTemporal(tt =>
+            {
+                tt.HasPeriodStart("ValidFrom");
+                tt.HasPeriodEnd("ValidTo");
+                tt.UseHistoryTable("Result", "history");
+            }));
+            e.HasKey(x => x.ResultId);
+            e.Property(x => x.RowVer).IsRowVersion();
+            e.Property(x => x.ValueNumeric).HasPrecision(18, 6);
+            e.Property(x => x.RefLow).HasPrecision(18, 6);
+            e.Property(x => x.RefHigh).HasPrecision(18, 6);
+        });
+        b.Entity<LabReport>(e =>
+        {
+            e.ToTable("Report", "lab");
+            e.HasKey(x => x.ReportId);
+        });
+        b.Entity<ReferenceRange>(e =>
+        {
+            e.ToTable("ReferenceRange", "ref");
+            foreach (var p in new[] { nameof(ReferenceRange.Low), nameof(ReferenceRange.High), nameof(ReferenceRange.CriticalLow), nameof(ReferenceRange.CriticalHigh) })
+                e.Property(p).HasPrecision(18, 6);
+        });
+        b.Entity<OutboundMessage>(e => e.ToTable("OutboundMessage", "lab"));
 
         b.Entity<ElectronicOrder>(e =>
         {

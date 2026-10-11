@@ -39,6 +39,16 @@ export type CreateRequisition = {
   isPregnant: boolean; pregnancyWeek: number | null; fastingHours: number | null; testIds: number[]
 }
 
+/** A requisition on the resulting worklist, with each ordered test broken into the analytes that are resulted. */
+export type LabRequisition = {
+  requisitionId: number; accessionNumber: string; patient: string; mrn: string; sex: string; ageYears: number; priority: 'Routine' | 'Stat'
+  status: string; receivedAt: string; clinicalNotes: string | null; practitioner: string; fromClinic: string | null; reportVersion: number
+  items: {
+    requisitionItemId: number; code: string; name: string; status: string
+    analytes: { testId: number; code: string; name: string; resultType: string; unit: string | null; value: string | null; flag: string | null; range: string | null; status: string | null }[]
+  }[]
+}
+
 /** An order sent by a clinic through ClinicHub, waiting for the patient to come in (connected mode). */
 export type ElectronicOrder = {
   electronicOrderId: number; sourceClinic: string; patientId: number; patient: string; mrn: string; dateOfBirth: string
@@ -132,6 +142,10 @@ export const api = {
   searchPractitioners: (text: string) => request<Practitioner[]>('GET', `/reception/practitioners?${q({ q: text })}`),
   createRequisition: (body: CreateRequisition) => request<Requisition>('POST', '/reception/requisitions', body),
   electronicOrders: () => request<ElectronicOrder[]>('GET', '/reception/electronic-orders'),
+  labWorklist: () => request<LabRequisition[]>('GET', '/lab/worklist'),
+  saveResults: (id: number, results: { requisitionItemId: number; testId: number; value: string | null }[]) =>
+    request<LabRequisition>('PUT', `/lab/requisitions/${id}/results`, { results }),
+  releaseResults: (id: number) => request<LabRequisition>('POST', `/lab/requisitions/${id}/release`),
   requisitionFromOrder: (id: number, locationId: number) =>
     request<Requisition>('POST', `/reception/electronic-orders/${id}/requisition`, { locationId }),
   requisition: (id: number) => request<Requisition>('GET', `/reception/requisitions/${id}`),

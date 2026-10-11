@@ -34,6 +34,9 @@ public class ClinicHubOptions
     public string? DatabasePattern { get; set; }
 
     public int RecheckMinutes { get; set; } = 5;
+
+    /// <summary>How often released results waiting for ClinicHub are sent. 0 turns the worker off (tests send on demand).</summary>
+    public int SendSeconds { get; set; } = 5;
     public int OfflineGraceMinutes { get; set; } = 30;
     public bool RequireHttpsMetadata { get; set; } = true;
 
@@ -173,11 +176,16 @@ public static class ClinicHubConnection
     public static bool AddClinicHubSignIn(this IServiceCollection services, IConfiguration config)
     {
         services.Configure<ClinicHubOptions>(config.GetSection("ClinicHub"));
+        // Connected or not: it also applies the upgrade scripts to the lab's database.
+        services.AddSingleton<LabDatabases>();
         var hub = config.GetSection("ClinicHub").Get<ClinicHubOptions>() ?? new ClinicHubOptions();
         if (!hub.Enabled)
             return false;
 
-        services.AddSingleton<LabDatabases>();
+        // Results back to ClinicHub, from the lab's (or each clinic's) outbox.
+        services.AddHttpClient(ResultSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(30));
+        services.AddSingleton<ResultSender>();
+        services.AddHostedService<ResultSenderWorker>();
         // The request's database: the signed-in person's clinic, or for anonymous booking the clinic it names.
         services.AddScoped(sp =>
         {

@@ -32,7 +32,8 @@ if (!connected)
 }
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(Policies.FrontDesk, p => p.RequireClaim(LabPermissions.ClaimType, LabPermissions.FrontDesk, LabPermissions.Admin));
+    .AddPolicy(Policies.FrontDesk, p => p.RequireClaim(LabPermissions.ClaimType, LabPermissions.FrontDesk, LabPermissions.Admin))
+    .AddPolicy(Policies.ResultsEntry, p => p.RequireClaim(LabPermissions.ClaimType, LabPermissions.ResultsEnter, LabPermissions.Admin));
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -44,9 +45,9 @@ builder.Services.AddRateLimiter(o =>
 
 var app = builder.Build();
 
-// One lab database, connected: apply the upgrade scripts (050 on) it may not have yet. A database per clinic is
-// upgraded when it is first opened.
-if (connected && !app.Services.GetRequiredService<LabDatabases>().PerClinic)
+// One lab database: apply the upgrade scripts (050 on) it may not have yet. A database per clinic is upgraded when it
+// is first opened.
+if (!app.Services.GetRequiredService<LabDatabases>().PerClinic)
     await app.Services.GetRequiredService<LabDatabases>().UpgradeAsync(builder.Configuration.GetConnectionString("LabFlow")!);
 
 app.UseExceptionHandler();
@@ -108,6 +109,7 @@ if (app.Environment.IsDevelopment() && !connected)
 app.MapBookingEndpoints();
 app.MapReceptionEndpoints();
 app.MapOrderEndpoints();
+app.MapResultEndpoints();
 
 app.Run();
 

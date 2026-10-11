@@ -54,6 +54,9 @@ public abstract class ConnectedFactory : WebApplicationFactory<Program>
 {
     protected readonly string Prefix = $"LabFlow_Test_{Guid.NewGuid():N}_";
 
+    /// <summary>ClinicHub receiving results: issues LabFlow's token and records what it is sent.</summary>
+    public FakeClinicHub Hub { get; } = new();
+
     /// <summary>ClinicHub's answer to a refresh; null means "invalid_grant".</summary>
     public Func<HttpResponseMessage>? TokenEndpoint { get; set; } = () => Granted("frontdesk");
 
@@ -67,6 +70,7 @@ public abstract class ConnectedFactory : WebApplicationFactory<Program>
         builder.UseSetting("ClinicHub:Authority", "https://hub.test/");
         builder.UseSetting("ClinicHub:ClientSecret", "test-secret");
         builder.UseSetting("ClinicHub:RecheckMinutes", "0");
+        builder.UseSetting("ClinicHub:SendSeconds", "0");
         Configure(builder);
         builder.ConfigureTestServices(services =>
         {
@@ -82,6 +86,8 @@ public abstract class ConnectedFactory : WebApplicationFactory<Program>
                 o.Backchannel = new HttpClient(new Stub(this));
             });
             services.AddSingleton<IStartupFilter>(new HubSignInRoute());
+            // Results going to ClinicHub: its token endpoint and /fhir, answered here.
+            services.AddHttpClient(ResultSender.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Hub);
             // ClinicHub's service tokens: signed here with a test key instead of ClinicHub's published one.
             services.PostConfigure<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>(ClinicHubConnection.ServiceScheme, o =>
             {
@@ -304,5 +310,24 @@ public class OneLabTests(OneLabFactory factory) : IClassFixture<OneLabFactory>
         Assert.False((bool)(await (await b.GetAsync("/api/auth/settings")).Content.ReadFromJsonAsync<JsonNode>())!["perClinicDatabase"]!);
         // Anonymous booking needs no clinic: it is the lab's.
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().GetAsync("/api/tests")).StatusCode);
+    }
+}
+
+public sealed class FakeClinicHub : HttpMessageHandler
+{
+    public List<JsonNode> Results { get; } = [];
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        if (request.RequestUri!.AbsolutePath == "/connect/token")
+        {
+            Assert.Contains("grant_type=client_credentials", await request.Content!.ReadAsStringAsync(ct));
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { access_token = "lab-token", expires_in = 3600 }) };
+        }
+        Assert.Equal("lab-token", request.Headers.Authorization?.Parameter);
+        var body = JsonNode.Parse(await request.Content!.ReadAsStringAsync(ct))!;
+        lock (Results)
+            Results.Add(body);
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"resourceType":"Bundle","type":"transaction-response","entry":[]}""") };
     }
 }

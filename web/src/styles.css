@@ -228,3 +228,12 @@ input.short { width: 90px; }
 .tube-BLD { background: #8e6cc0; }
 .tube-PLAS { background: #6bbf7a; }
 .tube-UR { background: #f2d15c; }
+
+/* resulting */
+.results-page { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.req-list { list-style: none; margin: 0; padding: 0; }
+.req-list button { width: 100%; display: grid; gap: .1rem; text-align: left; padding: .5rem .6rem; border: 0; border-bottom: 1px solid #e5e7eb; background: none; cursor: pointer; }
+.req-list button.on { background: #eef4ff; }
+.result-group { border: 1px solid #e5e7eb; border-radius: 8px; margin: .75rem 0; }
+tr.abnormal td { color: #b42318; }
+@media (max-width: 800px) { .results-page { grid-template-columns: 1fr; } }

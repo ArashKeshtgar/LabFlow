@@ -3,6 +3,7 @@ import { NavLink, Route, Routes } from 'react-router'
 import { api, getDemoUser, setDemoUser, type AuthSettings, type DemoUser, type Me } from './api'
 import { BookingPage } from './pages/BookingPage'
 import { ReceptionPage } from './pages/ReceptionPage'
+import { ResultsPage } from './pages/ResultsPage'
 
 const FRONT_DESK = ['Reception', 'Collector', 'Admin']
 
@@ -27,6 +28,9 @@ export function App() {
     ? !!me?.permissions.some(p => p === 'frontdesk' || p === 'admin')
     : !!role && FRONT_DESK.includes(role)
   const signInError = new URLSearchParams(window.location.search).get('signInError')
+  const canResult = connected
+    ? !!me?.permissions.some(p => p === 'results.enter' || p === 'admin')
+    : !!role && ['Technologist', 'Pathologist', 'Admin'].includes(role)
 
   function switchUser(id: string) {
     setDemoUser(id)
@@ -44,6 +48,7 @@ export function App() {
         <nav>
           <NavLink to="/" end>Book a visit</NavLink>
           <NavLink to="/reception">Reception</NavLink>
+          <NavLink to="/results">Results</NavLink>
         </nav>
         {connected && (me?.userId
           ? (
@@ -68,6 +73,7 @@ export function App() {
         {signInError && <p className="card narrow error" role="alert">{signInError}</p>}
         <Routes>
           <Route path="/" element={<BookingPage />} />
+          <Route path="/results" element={<ResultsPage key={connected ? me?.userId ?? 0 : current} canUse={canResult} />} />
           <Route path="/reception" element={<ReceptionPage key={connected ? me?.userId ?? 0 : current} canUse={isStaff} connected={connected} />} />
         </Routes>
       </main>
