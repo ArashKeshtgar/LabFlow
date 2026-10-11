@@ -40,6 +40,9 @@ public class ClinicHubOptions
     public int OfflineGraceMinutes { get; set; } = 30;
     public bool RequireHttpsMetadata { get; set; } = true;
 
+    /// <summary>FinancePowerApp's address (the group's accounting). Empty: the lab's money is not sent there.</summary>
+    public string? FinanceUrl { get; set; }
+
     public bool Enabled => !string.IsNullOrWhiteSpace(Authority);
     public bool PerClinic => DatabasePattern?.Contains("{clinic}") == true;
 }
@@ -186,6 +189,10 @@ public static class ClinicHubConnection
         services.AddHttpClient(ResultSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(30));
         services.AddSingleton<ResultSender>();
         services.AddHostedService<ResultSenderWorker>();
+        // The lab's money to the group's accounting, when FinancePowerApp's address is set.
+        services.AddHttpClient(FinanceSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(30));
+        services.AddSingleton<FinanceSender>();
+        services.AddHostedService<FinanceSenderWorker>();
         // The request's database: the signed-in person's clinic, or for anonymous booking the clinic it names.
         services.AddScoped(sp =>
         {

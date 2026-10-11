@@ -19,6 +19,9 @@ for background work (email outbox, AI interpretation, PDF rendering).
 - [ ] Azure Data Factory version of the ETL, Power BI report on `dw`
 - [ ] Azure Functions (notifications, AI interpretation)
 - [ ] HL7 v2 ORU export (OLIS simulation)
+- [x] The lab's money to FinancePowerApp (the group's accounting): patient invoices, online payments, voids and
+      refunds; insured work once `ref.Test.OhipFee` holds the Schedule of Benefits amounts (the demo has fee codes only).
+      Set `ClinicHub:FinanceUrl`; LabFlow gets a ClinicHub token with the scope `finance`
 
 ## Build the database
 

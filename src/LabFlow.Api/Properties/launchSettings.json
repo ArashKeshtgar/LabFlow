@@ -19,7 +19,8 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ClinicHub__Authority": "http://localhost:5301/",
         "ClinicHub__ClientSecret": "dev-only-labflow-secret",
-        "ClinicHub__RequireHttpsMetadata": "false"
+        "ClinicHub__RequireHttpsMetadata": "false",
+        "ClinicHub__FinanceUrl": "http://localhost:5400"
       }
     },
     "connected-per-clinic": {
@@ -32,6 +33,7 @@
         "ClinicHub__Authority": "http://localhost:5301/",
         "ClinicHub__ClientSecret": "dev-only-labflow-secret",
         "ClinicHub__RequireHttpsMetadata": "false",
+        "ClinicHub__FinanceUrl": "http://localhost:5400",
         "ClinicHub__DatabasePattern": "Server=.;Database=LabFlow_{clinic};Trusted_Connection=True;TrustServerCertificate=True"
       }
     }
