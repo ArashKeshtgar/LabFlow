@@ -12,7 +12,8 @@ for background work (email outbox, AI interpretation, PDF rendering).
 - [x] Database schema, reference catalog and synthetic demo data (`database/`)
 - [x] API: booking, slots, reception day sheet, check-in, patient lookup, requisition entry (`src/LabFlow.Api`)
 - [x] React front end: patient booking and front desk (`web/`)
-- [ ] Specimen collection, resulting and verification screens
+- [x] Resulting screen: result entry, flags from reference ranges, release and corrections (report versions)
+- [ ] Specimen collection and verification screens
 - [ ] Patient portal and PDF report
 - [x] ETL from the legacy `Laboratory` database: SSIS package → de-identified staging → `dw` star schema (`etl/`)
 - [ ] Azure Data Factory version of the ETL, Power BI report on `dw`
@@ -75,6 +76,11 @@ for LabFlow. They wait as electronic orders (`database/050_electronic_orders.sql
 collection; reception's *Patient is here: make requisition* turns one into a requisition with the usual checks. The
 patient is matched by health card or name and birth date and registered if new; the physician by billing or CPSO
 number. Scripts from 050 on are safe to re-run and are applied to existing databases at start-up.
+
+**Results back.** Releasing the results of a requisition made from an electronic order sends them to ClinicHub: a
+FHIR DiagnosticReport per ordered test with an Observation per analyte (LOINC, value, unit, range, H/L), `final`
+first and `amended` for a correction. Messages wait in `lab.OutboundMessage` (`database/051_outbound_messages.sql`)
+until delivered; LabFlow authenticates with its own client id and secret (client credentials, scope `results`).
 
 A new clinic database has no collection sites until the clinic adds one (`core.Location` and its hours).
 Database tests (`ConnectedTests`) build throw-away databases and run only where a SQL Server is reachable
