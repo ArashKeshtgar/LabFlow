@@ -1,33 +1,40 @@
 table Test
+	lineageTag: 675a1c9c-c76a-4cfe-8197-4d0b8ddc94e6
 
 	column TestKey
 		dataType: int64
 		isHidden
+		lineageTag: 78c1f6cd-bd6f-4077-b681-6b39e717cee1
 		summarizeBy: none
 		sourceColumn: TestKey
 
 	column TestName
 		dataType: string
+		lineageTag: 71ba6fa4-a945-48ff-842e-9308573a97e4
 		summarizeBy: none
 		sourceColumn: TestName
 
 	column LoincCode
 		dataType: string
+		lineageTag: 489b0b2c-e601-4b2b-a35c-27e92acfe5cc
 		summarizeBy: none
 		sourceColumn: LoincCode
 
 	column SiUnit
 		dataType: string
+		lineageTag: 5bbc5945-836f-4c8c-892a-0bd9253aead7
 		summarizeBy: none
 		sourceColumn: SiUnit
 
 	column MapStatus
 		dataType: string
+		lineageTag: 5f6b658e-3b50-4d99-9928-af718b704424
 		summarizeBy: none
 		sourceColumn: MapStatus
 
 	column IsPanel
 		dataType: boolean
+		lineageTag: 5a9b28e4-b8b4-48d9-8ae0-e646241717c8
 		summarizeBy: none
 		sourceColumn: IsPanel
 
@@ -40,3 +47,6 @@ table Test
 				    Kept = Table.SelectColumns(Data, {"TestKey", "TestName", "LoincCode", "SiUnit", "MapStatus", "IsPanel"})
 				in
 				    Kept
+
+	annotation PBI_ResultType = Table
+

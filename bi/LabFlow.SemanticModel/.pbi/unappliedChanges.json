@@ -1,0 +1,167 @@
+{
+  "version": "1.0",
+  "conceptualSchemaSettings": {},
+  "queries": [
+    {
+      "name": "Server",
+      "lineageTag": "88507c5d-b8e2-4d38-8943-a9d32dd26b74",
+      "text": [
+        "\"labflow-arash-sql.database.windows.net\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      ],
+      "loadAsTableDisabled": true,
+      "resultType": "Text",
+      "isHidden": false
+    },
+    {
+      "name": "Database",
+      "lineageTag": "af4eddd6-268f-4399-b2ed-4cba0019203e",
+      "text": [
+        "\"LabFlowDW\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      ],
+      "loadAsTableDisabled": true,
+      "resultType": "Text",
+      "isHidden": false
+    },
+    {
+      "name": "Results",
+      "lineageTag": "22c87a99-4584-4436-af86-f351d6d7a882",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"dw\", Item=\"FactLabResult\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"ResultKey\", \"LegacyVisitNo\", \"TestKey\", \"PatientKey\", \"PayerKey\", \"VisitDateKey\", \"ResultDateKey\", \"AgeBand\", \"HasAnswer\", \"ValueSi\", \"IsAbnormal\", \"IsCritical\", \"TurnaroundDays\", \"LoadRunId\"}),",
+        "    Renamed = Table.RenameColumns(Kept, {{\"LegacyVisitNo\", \"VisitNo\"}})",
+        "in",
+        "    Renamed"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"dw\\\", Item=\\\"FactLabResult\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"ResultKey\\\", \\\"LegacyVisitNo\\\", \\\"TestKey\\\", \\\"PatientKey\\\", \\\"PayerKey\\\", \\\"VisitDateKey\\\", \\\"ResultDateKey\\\", \\\"AgeBand\\\", \\\"HasAnswer\\\", \\\"ValueSi\\\", \\\"IsAbnormal\\\", \\\"IsCritical\\\", \\\"TurnaroundDays\\\", \\\"LoadRunId\\\"}),\\r\\n    Renamed = Table.RenameColumns(Kept, {{\\\"LegacyVisitNo\\\", \\\"VisitNo\\\"}})\\r\\nin\\r\\n    Renamed\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Test",
+      "lineageTag": "675a1c9c-c76a-4cfe-8197-4d0b8ddc94e6",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"dw\", Item=\"DimTest\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"TestKey\", \"TestName\", \"LoincCode\", \"SiUnit\", \"MapStatus\", \"IsPanel\"})",
+        "in",
+        "    Kept"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"dw\\\", Item=\\\"DimTest\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"TestKey\\\", \\\"TestName\\\", \\\"LoincCode\\\", \\\"SiUnit\\\", \\\"MapStatus\\\", \\\"IsPanel\\\"})\\r\\nin\\r\\n    Kept\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Payer",
+      "lineageTag": "2f46c681-dfb1-4902-ade8-378eb945eb4b",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"dw\", Item=\"DimPayer\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"PayerKey\", \"PayerName\", \"PayerType\"})",
+        "in",
+        "    Kept"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"dw\\\", Item=\\\"DimPayer\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"PayerKey\\\", \\\"PayerName\\\", \\\"PayerType\\\"})\\r\\nin\\r\\n    Kept\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Patient",
+      "lineageTag": "5906d288-28d6-4746-b3ae-0d0ffc5714a2",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"dw\", Item=\"DimPatient\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"PatientKey\", \"Sex\"})",
+        "in",
+        "    Kept"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"dw\\\", Item=\\\"DimPatient\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"PatientKey\\\", \\\"Sex\\\"})\\r\\nin\\r\\n    Kept\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Date",
+      "lineageTag": "4a277c14-6aa3-45e4-9bd2-a15e9e1a2ed9",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"dw\", Item=\"DimDate\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"DateKey\", \"Date\", \"Year\", \"Month\", \"MonthName\", \"WeekdayNo\", \"WeekdayName\", \"IsWeekend\"})",
+        "in",
+        "    Kept"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"dw\\\", Item=\\\"DimDate\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"DateKey\\\", \\\"Date\\\", \\\"Year\\\", \\\"Month\\\", \\\"MonthName\\\", \\\"WeekdayNo\\\", \\\"WeekdayName\\\", \\\"IsWeekend\\\"})\\r\\nin\\r\\n    Kept\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Load Runs",
+      "lineageTag": "5a9aee06-b23a-4948-a40e-601b7d77a411",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"etl\", Item=\"SourceLoadRun\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"RunId\", \"Package\", \"StartedAt\", \"Status\", \"ResultsExtracted\", \"ResultsInserted\", \"ResultsUpdated\", \"ResultsSkipped\", \"ResultsRejected\", \"Warnings\"})",
+        "in",
+        "    Kept"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"etl\\\", Item=\\\"SourceLoadRun\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"RunId\\\", \\\"Package\\\", \\\"StartedAt\\\", \\\"Status\\\", \\\"ResultsExtracted\\\", \\\"ResultsInserted\\\", \\\"ResultsUpdated\\\", \\\"ResultsSkipped\\\", \\\"ResultsRejected\\\", \\\"Warnings\\\"})\\r\\nin\\r\\n    Kept\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Data Quality Issues",
+      "lineageTag": "a8b508a1-51b8-4bb0-ae0e-737dff60bafc",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"etl\", Item=\"SourceRejectRow\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"RejectRowId\", \"RunId\", \"Severity\", \"SourceTable\", \"SourceKey\", \"Rule_\"}),",
+        "    Renamed = Table.RenameColumns(Kept, {{\"Rule_\", \"Rule\"}})",
+        "in",
+        "    Renamed"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"etl\\\", Item=\\\"SourceRejectRow\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"RejectRowId\\\", \\\"RunId\\\", \\\"Severity\\\", \\\"SourceTable\\\", \\\"SourceKey\\\", \\\"Rule_\\\"}),\\r\\n    Renamed = Table.RenameColumns(Kept, {{\\\"Rule_\\\", \\\"Rule\\\"}})\\r\\nin\\r\\n    Renamed\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    },
+    {
+      "name": "Copy Runs",
+      "lineageTag": "090c47bb-3a6e-4a8f-8739-e86ed72c8b36",
+      "text": [
+        "let",
+        "    Source = Sql.Database(Server, Database),",
+        "    Data = Source{[Schema=\"etl\", Item=\"CopyRun\"]}[Data],",
+        "    Kept = Table.SelectColumns(Data, {\"CopyRunId\", \"StartedAt\", \"FromSourceRunId\", \"ToSourceRunId\", \"FactsStaged\", \"FactsInserted\", \"FactsUpdated\"})",
+        "in",
+        "    Kept"
+      ],
+      "isDirectQuery": false,
+      "lastLoadedAsTableFormulaText": "{\"IncludesReferencedQueries\":false,\"RootFormulaText\":\"let\\r\\n    Source = Sql.Database(Server, Database),\\r\\n    Data = Source{[Schema=\\\"etl\\\", Item=\\\"CopyRun\\\"]}[Data],\\r\\n    Kept = Table.SelectColumns(Data, {\\\"CopyRunId\\\", \\\"StartedAt\\\", \\\"FromSourceRunId\\\", \\\"ToSourceRunId\\\", \\\"FactsStaged\\\", \\\"FactsInserted\\\", \\\"FactsUpdated\\\"})\\r\\nin\\r\\n    Kept\",\"ReferencedQueriesFormulaText\":{}}",
+      "loadAsTableDisabled": false,
+      "resultType": "Table",
+      "isHidden": false
+    }
+  ],
+  "queryGroups": [],
+  "culture": "en-US",
+  "firewallEnabled": true
+}

@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "d258802b4f45f3841aae",
   "position": {
     "x": 856,
     "y": 452,
     "z": 24,
-    "width": 400,
     "height": 250,
+    "width": 400,
     "tabOrder": 24
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Results.AgeBand",
-              "nativeQueryRef": "AgeBand"
+              "nativeQueryRef": "AgeBand",
+              "active": true
             }
           ]
         }

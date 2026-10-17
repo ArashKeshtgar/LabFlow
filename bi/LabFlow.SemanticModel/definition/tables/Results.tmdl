@@ -1,140 +1,169 @@
 table Results
+	lineageTag: 22c87a99-4584-4436-af86-f351d6d7a882
 
 	/// Test results (panel members, not panel headers).
 	measure 'Result Count' = COUNTROWS ( Results )
 		formatString: #,0
+		lineageTag: 9c091fcc-2ae4-4b85-8b52-d469f32d3697
 
 	/// Distinct legacy visits.
 	measure Visits = DISTINCTCOUNT ( Results[VisitNo] )
 		formatString: #,0
+		lineageTag: 9a5f2c6d-7f35-4a04-9aed-232df9dee7df
 
 	/// Distinct de-identified patients.
 	measure Patients = DISTINCTCOUNT ( Results[PatientKey] )
 		formatString: #,0
+		lineageTag: 8d4351e8-2785-4772-919f-5f8a61781cdf
 
 	/// Results with a reported value.
 	measure 'Answered Results' = CALCULATE ( [Result Count], Results[HasAnswer] = TRUE () )
 		formatString: #,0
+		lineageTag: d17238d4-46d9-41ca-8582-30f2967c3647
 
 	/// Share of results that have a value.
 	measure 'Answered %' = DIVIDE ( [Answered Results], [Result Count] )
 		formatString: 0.0%
+		lineageTag: 310a5445-12d1-42fa-83e6-bb0f1d8572de
 
 	/// Answered results outside the reference range.
 	measure 'Abnormal Results' = CALCULATE ( [Result Count], Results[IsAbnormal] = TRUE () )
 		formatString: #,0
+		lineageTag: b22ffafb-bd47-4a38-8db4-b9b0afddd6fa
 
 	/// Abnormal results over answered results.
 	measure 'Abnormal %' = DIVIDE ( [Abnormal Results], [Answered Results] )
 		formatString: 0.0%
+		lineageTag: 5e1c8b16-7a7b-4270-9edf-4553a953fc2a
 
 	/// Results flagged critical.
 	measure 'Critical Results' = CALCULATE ( [Result Count], Results[IsCritical] = TRUE () )
 		formatString: #,0
+		lineageTag: cefdfd79-e850-4948-b4c8-8b72dcb1ede2
 
 	/// Visit date to answer date, in days.
 	measure 'Avg Turnaround (days)' = AVERAGE ( Results[TurnaroundDays] )
 		formatString: 0.00
+		lineageTag: 0b5f4e72-5acd-458c-bdcb-3313eb68b6a0
 
 	/// Results that have both a visit and an answer date.
 	measure 'Results With Turnaround' = COUNT ( Results[TurnaroundDays] )
 		formatString: #,0
+		lineageTag: c2a065ff-63d1-49e8-b151-ef6c785f0dfe
 
 	/// Results answered on the visit date.
 	measure 'Same-day %' = DIVIDE ( CALCULATE ( [Results With Turnaround], Results[TurnaroundDays] = 0 ), [Results With Turnaround] )
 		formatString: 0.0%
+		lineageTag: 055725aa-995d-4627-87a7-691a0bb6aca0
 
 	/// Results whose legacy test is mapped to a LOINC code.
 	measure 'LOINC Mapped %' = DIVIDE ( CALCULATE ( [Result Count], Test[MapStatus] <> "Unmapped" ), [Result Count] )
 		formatString: 0.0%
+		lineageTag: 39b22c1c-29ba-45e8-aba8-5235266abc18
 
 	column ResultKey
 		dataType: int64
 		isHidden
+		lineageTag: 582a077a-c907-4b55-817b-a531ba476e0c
 		summarizeBy: none
 		sourceColumn: ResultKey
 
 	column VisitNo
 		dataType: int64
 		isHidden
+		lineageTag: b88c5418-7f13-4814-9f63-925e3b5fd831
 		summarizeBy: none
-		sourceColumn: LegacyVisitNo
+		sourceColumn: VisitNo
 
 	column TestKey
 		dataType: int64
 		isHidden
+		lineageTag: 0da5bcbf-3782-496f-88e4-e72acbed3a2f
 		summarizeBy: none
 		sourceColumn: TestKey
 
 	column PatientKey
 		dataType: int64
 		isHidden
+		lineageTag: 5978a1c8-e535-4d45-b5ad-8e10aebfdc15
 		summarizeBy: none
 		sourceColumn: PatientKey
 
 	column PayerKey
 		dataType: int64
 		isHidden
+		lineageTag: dba8733b-bd05-4ce0-bf44-fa6be76ffea6
 		summarizeBy: none
 		sourceColumn: PayerKey
 
 	column VisitDateKey
 		dataType: int64
 		isHidden
+		lineageTag: c3380963-3e95-4500-97b3-42bfe4859422
 		summarizeBy: none
 		sourceColumn: VisitDateKey
 
 	column ResultDateKey
 		dataType: int64
 		isHidden
+		lineageTag: d12feb76-fbde-4ec2-aedc-5df22d2a2e90
 		summarizeBy: none
 		sourceColumn: ResultDateKey
 
 	column AgeBand
 		dataType: string
+		lineageTag: 3defd5ee-3a27-44eb-b3a6-94890d38fab3
 		summarizeBy: none
 		sourceColumn: AgeBand
 
 	column HasAnswer
 		dataType: boolean
+		lineageTag: 568a8fa8-4fcd-4ce9-9c07-e8fd58bf2f52
 		summarizeBy: none
 		sourceColumn: HasAnswer
 
 	column ValueSi
 		dataType: double
 		formatString: #,0.###
+		lineageTag: 146bfb16-a31d-4eb0-b0f0-9aa42f5cec8d
 		summarizeBy: none
 		sourceColumn: ValueSi
 
 	column IsAbnormal
 		dataType: boolean
+		lineageTag: 9f885e57-14c3-4b02-917c-05f30574ef88
 		summarizeBy: none
 		sourceColumn: IsAbnormal
 
 	column IsCritical
 		dataType: boolean
+		lineageTag: ec1ebdc9-2c5d-405e-90ba-2ad37136ed62
 		summarizeBy: none
 		sourceColumn: IsCritical
 
 	column TurnaroundDays
 		dataType: int64
 		formatString: 0
+		lineageTag: 7f262fb1-fcec-4de8-adc2-4ea30fba8019
 		summarizeBy: none
 		sourceColumn: TurnaroundDays
 
 	column LoadRunId
 		dataType: int64
 		isHidden
+		lineageTag: 9bff4468-c0f4-4317-9bac-7e275eab1c03
 		summarizeBy: none
 		sourceColumn: LoadRunId
 
 	column 'TAT Band Order' = SWITCH ( TRUE (), ISBLANK ( Results[TurnaroundDays] ), 9, Results[TurnaroundDays] = 0, 1, Results[TurnaroundDays] = 1, 2, Results[TurnaroundDays] <= 3, 3, Results[TurnaroundDays] <= 7, 4, 5 )
 		dataType: int64
 		isHidden
+		lineageTag: 7aaaa424-24a6-45e2-98bb-f611d81d7e67
 		summarizeBy: none
 
 	column 'TAT Band' = SWITCH ( Results[TAT Band Order], 1, "Same day", 2, "1 day", 3, "2-3 days", 4, "4-7 days", 5, "8+ days", "No answer date" )
 		dataType: string
+		lineageTag: 76dce869-3571-4c5e-bb4c-762772300702
 		summarizeBy: none
 		sortByColumn: 'TAT Band Order'
 
@@ -148,3 +177,6 @@ table Results
 				    Renamed = Table.RenameColumns(Kept, {{"LegacyVisitNo", "VisitNo"}})
 				in
 				    Renamed
+
+	annotation PBI_ResultType = Table
+

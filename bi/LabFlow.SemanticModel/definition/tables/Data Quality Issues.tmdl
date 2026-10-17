@@ -1,44 +1,53 @@
 table 'Data Quality Issues'
+	lineageTag: a8b508a1-51b8-4bb0-ae0e-737dff60bafc
 
 	/// Reject/warning rows across all ETL runs.
 	measure 'Issue Rows' = COUNTROWS ( 'Data Quality Issues' )
 		formatString: #,0
+		lineageTag: 1354c890-dbdb-4fbf-8b5e-5f36dbf06647
 
 	/// Each source row and rule counted once, however many runs saw it.
 	measure 'Distinct Issues' = COUNTROWS ( SUMMARIZE ( 'Data Quality Issues', 'Data Quality Issues'[SourceTable], 'Data Quality Issues'[SourceKey], 'Data Quality Issues'[Rule] ) )
 		formatString: #,0
+		lineageTag: 6a7381ce-0e55-46ae-bd6d-c85fe7ca923d
 
 	column RejectRowId
 		dataType: int64
 		isHidden
+		lineageTag: a1f78f2f-92f4-48f4-b819-c0b78bb77425
 		summarizeBy: none
 		sourceColumn: RejectRowId
 
 	column RunId
 		dataType: int64
 		isHidden
+		lineageTag: 27becf5c-0684-4a13-b6e0-d55533a95503
 		summarizeBy: none
 		sourceColumn: RunId
 
 	column Severity
 		dataType: string
+		lineageTag: e81d810d-562b-40ef-963c-7ddd3e5d5ad9
 		summarizeBy: none
 		sourceColumn: Severity
 
 	column SourceTable
 		dataType: string
+		lineageTag: e3930d4b-7b21-49d1-b7fa-f8f00bab98e9
 		summarizeBy: none
 		sourceColumn: SourceTable
 
 	column SourceKey
 		dataType: string
+		lineageTag: 6a376fa7-8221-45b4-a994-78eb15dc4d0b
 		summarizeBy: none
 		sourceColumn: SourceKey
 
 	column Rule
 		dataType: string
+		lineageTag: 010c6abf-6585-4d88-ae04-659512fa26e3
 		summarizeBy: none
-		sourceColumn: Rule_
+		sourceColumn: Rule
 
 	partition 'Data Quality Issues' = m
 		mode: import
@@ -50,3 +59,6 @@ table 'Data Quality Issues'
 				    Renamed = Table.RenameColumns(Kept, {{"Rule_", "Rule"}})
 				in
 				    Renamed
+
+	annotation PBI_ResultType = Table
+

@@ -1,3 +1,6 @@
 expression Server = "labflow-arash-sql.database.windows.net" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 88507c5d-b8e2-4d38-8943-a9d32dd26b74
 
 expression Database = "LabFlowDW" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: af4eddd6-268f-4399-b2ed-4cba0019203e
+

@@ -1,18 +1,22 @@
 table Payer
+	lineageTag: 2f46c681-dfb1-4902-ade8-378eb945eb4b
 
 	column PayerKey
 		dataType: int64
 		isHidden
+		lineageTag: 53c24044-4a92-4541-9935-352dbbbc8d86
 		summarizeBy: none
 		sourceColumn: PayerKey
 
 	column PayerName
 		dataType: string
+		lineageTag: d31dc2f8-adb5-4ae4-9036-c179109194c5
 		summarizeBy: none
 		sourceColumn: PayerName
 
 	column PayerType
 		dataType: string
+		lineageTag: bb274b57-4ac3-42d1-a79a-72d4f8fa3d14
 		summarizeBy: none
 		sourceColumn: PayerType
 
@@ -25,3 +29,6 @@ table Payer
 				    Kept = Table.SelectColumns(Data, {"PayerKey", "PayerName", "PayerType"})
 				in
 				    Kept
+
+	annotation PBI_ResultType = Table
+

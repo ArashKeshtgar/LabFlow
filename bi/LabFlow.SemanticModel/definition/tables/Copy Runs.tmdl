@@ -1,50 +1,76 @@
 table 'Copy Runs'
+	lineageTag: 090c47bb-3a6e-4a8f-8739-e86ed72c8b36
 
 	/// Fact rows inserted or updated in Azure by the ADF pipeline.
 	measure 'Facts Copied To Azure' = SUM ( 'Copy Runs'[FactsInserted] ) + SUM ( 'Copy Runs'[FactsUpdated] )
 		formatString: #,0
+		lineageTag: 0ab7396d-2776-4cff-a3b1-20e86c2df83f
 
 	column CopyRunId
 		dataType: int64
 		isHidden
-		summarizeBy: none
+		lineageTag: 3f0e1636-f6f6-4a61-bff8-c415a57daedc
+		summarizeBy: count
 		sourceColumn: CopyRunId
+
+		annotation SummarizationSetBy = Automatic
 
 	column StartedAt
 		dataType: dateTime
 		formatString: yyyy-mm-dd hh:nn
+		lineageTag: a08f1f4a-db6b-4db3-b4ff-ca4663b2268a
 		summarizeBy: none
 		sourceColumn: StartedAt
+
+		variation Variation
+			isDefault
+			relationship: 86343214-74bc-4476-bf3a-618faeb130ac
+			defaultHierarchy: LocalDateTable_8a469429-218c-4e19-8681-5a41550f031a.'Date Hierarchy'
 
 	column FromSourceRunId
 		dataType: int64
 		formatString: 0
-		summarizeBy: none
+		lineageTag: 0d8d1205-fc8e-4e2f-8587-2e08f0240a48
+		summarizeBy: count
 		sourceColumn: FromSourceRunId
+
+		annotation SummarizationSetBy = Automatic
 
 	column ToSourceRunId
 		dataType: int64
 		formatString: 0
-		summarizeBy: none
+		lineageTag: 0e84aa04-db9f-4f12-9d1c-90cc10ea9362
+		summarizeBy: count
 		sourceColumn: ToSourceRunId
+
+		annotation SummarizationSetBy = Automatic
 
 	column FactsStaged
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: 64f1c840-475f-4d3f-afad-6df3a0e07b62
+		summarizeBy: sum
 		sourceColumn: FactsStaged
+
+		annotation SummarizationSetBy = Automatic
 
 	column FactsInserted
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: b53fe1f5-ddfc-4a2d-9d01-dc3dde2d6ed7
+		summarizeBy: sum
 		sourceColumn: FactsInserted
+
+		annotation SummarizationSetBy = Automatic
 
 	column FactsUpdated
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: d1b0fa3c-5403-41d1-9d35-e7cf57011529
+		summarizeBy: sum
 		sourceColumn: FactsUpdated
+
+		annotation SummarizationSetBy = Automatic
 
 	partition 'Copy Runs' = m
 		mode: import
@@ -55,3 +81,6 @@ table 'Copy Runs'
 				    Kept = Table.SelectColumns(Data, {"CopyRunId", "StartedAt", "FromSourceRunId", "ToSourceRunId", "FactsStaged", "FactsInserted", "FactsUpdated"})
 				in
 				    Kept
+
+	annotation PBI_ResultType = Table
+

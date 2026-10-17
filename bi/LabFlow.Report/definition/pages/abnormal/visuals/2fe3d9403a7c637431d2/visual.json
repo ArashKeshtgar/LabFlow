@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "2fe3d9403a7c637431d2",
   "position": {
     "x": 760,
     "y": 452,
     "z": 22,
-    "width": 496,
     "height": 250,
+    "width": 496,
     "tabOrder": 22
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Payer.PayerType",
-              "nativeQueryRef": "PayerType"
+              "nativeQueryRef": "PayerType",
+              "active": true
             }
           ]
         },

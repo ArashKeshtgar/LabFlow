@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/1.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/1.2.0/schema.json",
   "themeCollection": {
     "customTheme": {
       "name": "LabFlow.json",
@@ -23,6 +23,7 @@
   ],
   "settings": {
     "useStylableVisualContainerHeader": true,
-    "defaultDrillFilterOtherVisuals": true
+    "defaultDrillFilterOtherVisuals": true,
+    "useEnhancedTooltips": true
   }
 }

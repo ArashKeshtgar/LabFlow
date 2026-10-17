@@ -1,66 +1,95 @@
 table 'Load Runs'
+	lineageTag: 5a9aee06-b23a-4948-a40e-601b7d77a411
 
 	/// SSIS runs that finished.
 	measure 'Load Runs Succeeded' = CALCULATE ( COUNTROWS ( 'Load Runs' ), 'Load Runs'[Status] = "Succeeded" )
 		formatString: #,0
+		lineageTag: b9b5f240-3bf2-4ad1-8fd2-d88abfb0d339
 
 	column RunId
 		dataType: int64
 		formatString: 0
+		lineageTag: 5eb0d39d-8477-4006-9570-5ddb41599db2
 		summarizeBy: none
 		sourceColumn: RunId
 
 	column Package
 		dataType: string
+		lineageTag: cdc5a9cd-28c7-43e0-a9a9-a29b7c9195c0
 		summarizeBy: none
 		sourceColumn: Package
 
 	column StartedAt
 		dataType: dateTime
 		formatString: yyyy-mm-dd hh:nn
+		lineageTag: d13e73d2-2b5f-497b-8e4d-902a1d65105f
 		summarizeBy: none
 		sourceColumn: StartedAt
 
+		variation Variation
+			isDefault
+			relationship: 8eccd595-f528-48ee-bb54-e47b99f3c0ba
+			defaultHierarchy: LocalDateTable_a9830d86-2bbd-4384-b0ca-f92a380c3d30.'Date Hierarchy'
+
 	column Status
 		dataType: string
+		lineageTag: 8ba9d1ed-b444-4a7a-a3c6-9af04dc768c7
 		summarizeBy: none
 		sourceColumn: Status
 
 	column ResultsExtracted
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: f40b8fbf-ad3b-4d1f-8b2c-8fc97569604b
+		summarizeBy: sum
 		sourceColumn: ResultsExtracted
+
+		annotation SummarizationSetBy = Automatic
 
 	column ResultsInserted
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: cbf84960-758a-4915-a802-723c6d85a547
+		summarizeBy: sum
 		sourceColumn: ResultsInserted
+
+		annotation SummarizationSetBy = Automatic
 
 	column ResultsUpdated
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: 75729e29-2a1f-4a89-ae26-7d382383ef72
+		summarizeBy: sum
 		sourceColumn: ResultsUpdated
+
+		annotation SummarizationSetBy = Automatic
 
 	column ResultsSkipped
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: 45b2c5b3-9419-4ac3-ae59-85dfa767ed8b
+		summarizeBy: sum
 		sourceColumn: ResultsSkipped
+
+		annotation SummarizationSetBy = Automatic
 
 	column ResultsRejected
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: 2a1f2233-246a-48f2-8365-a5454226bc52
+		summarizeBy: sum
 		sourceColumn: ResultsRejected
+
+		annotation SummarizationSetBy = Automatic
 
 	column Warnings
 		dataType: int64
 		formatString: #,0
-		summarizeBy: none
+		lineageTag: 10baf8ca-716a-4b99-9d4d-f939de51de02
+		summarizeBy: sum
 		sourceColumn: Warnings
+
+		annotation SummarizationSetBy = Automatic
 
 	partition 'Load Runs' = m
 		mode: import
@@ -71,3 +100,6 @@ table 'Load Runs'
 				    Kept = Table.SelectColumns(Data, {"RunId", "Package", "StartedAt", "Status", "ResultsExtracted", "ResultsInserted", "ResultsUpdated", "ResultsSkipped", "ResultsRejected", "Warnings"})
 				in
 				    Kept
+
+	annotation PBI_ResultType = Table
+

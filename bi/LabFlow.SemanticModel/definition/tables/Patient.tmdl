@@ -1,13 +1,16 @@
 table Patient
+	lineageTag: 5906d288-28d6-4746-b3ae-0d0ffc5714a2
 
 	column PatientKey
 		dataType: int64
 		isHidden
+		lineageTag: 41ae56c4-4655-4d60-ba9d-bd223ee1d69a
 		summarizeBy: none
 		sourceColumn: PatientKey
 
 	column Sex
 		dataType: string
+		lineageTag: 61e06338-785d-4806-8f13-9e08df7f7d45
 		summarizeBy: none
 		sourceColumn: Sex
 
@@ -20,3 +23,6 @@ table Patient
 				    Kept = Table.SelectColumns(Data, {"PatientKey", "Sex"})
 				in
 				    Kept
+
+	annotation PBI_ResultType = Table
+

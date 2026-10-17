@@ -22,3 +22,19 @@ relationship d3e9d8156905712f6a6fcc615ae50d1c
 relationship 3637db4e6f2a4c096350e6c8b30e5a13
 	fromColumn: 'Data Quality Issues'.RunId
 	toColumn: 'Load Runs'.RunId
+
+relationship 520904a6-c3e0-48a4-a032-a4cf077d58c4
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Date.Date
+	toColumn: LocalDateTable_cb809add-2722-445a-8c36-589e412ba056.Date
+
+relationship 8eccd595-f528-48ee-bb54-e47b99f3c0ba
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Load Runs'.StartedAt
+	toColumn: LocalDateTable_a9830d86-2bbd-4384-b0ca-f92a380c3d30.Date
+
+relationship 86343214-74bc-4476-bf3a-618faeb130ac
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Copy Runs'.StartedAt
+	toColumn: LocalDateTable_8a469429-218c-4e19-8681-5a41550f031a.Date
+

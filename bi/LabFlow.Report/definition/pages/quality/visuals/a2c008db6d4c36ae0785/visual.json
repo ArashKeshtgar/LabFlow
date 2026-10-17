@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "a2c008db6d4c36ae0785",
   "position": {
     "x": 640,
     "y": 558,
     "z": 23,
-    "width": 616,
     "height": 144,
+    "width": 616,
     "tabOrder": 23
   },
   "visual": {
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Test.MapStatus",
-              "nativeQueryRef": "MapStatus"
+              "nativeQueryRef": "MapStatus",
+              "active": true
             }
           ]
         },

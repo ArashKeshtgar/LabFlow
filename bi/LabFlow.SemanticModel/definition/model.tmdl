@@ -7,7 +7,13 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-annotation PBI_QueryOrder = ["Server", "Database", "Results", "Test", "Payer", "Patient", "Date", "Load Runs", "Data Quality Issues", "Copy Runs"]
+annotation PBI_QueryOrder = ["Server","Database","Results","Test","Payer","Patient","Date","Load Runs","Data Quality Issues","Copy Runs"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBIDesktopVersion = 2.139.1576.0 (24.12)+cf7e324bca3ba1dbdfd6f0ddf9a53321538e996d
+
+annotation PBI_ProTooling = ["DevMode"]
 
 ref table Results
 ref table Test
@@ -17,3 +23,10 @@ ref table Date
 ref table 'Load Runs'
 ref table 'Data Quality Issues'
 ref table 'Copy Runs'
+ref table DateTableTemplate_5ffd6bed-e0c2-41ca-a6fa-7f73001c2681
+ref table LocalDateTable_cb809add-2722-445a-8c36-589e412ba056
+ref table LocalDateTable_a9830d86-2bbd-4384-b0ca-f92a380c3d30
+ref table LocalDateTable_8a469429-218c-4e19-8681-5a41550f031a
+
+ref cultureInfo en-US
+
