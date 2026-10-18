@@ -316,6 +316,7 @@ public class OneLabTests(OneLabFactory factory) : IClassFixture<OneLabFactory>
 public sealed class FakeClinicHub : HttpMessageHandler
 {
     public List<JsonNode> Results { get; } = [];
+    public List<Uri> ResultUris { get; } = [];
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -327,7 +328,10 @@ public sealed class FakeClinicHub : HttpMessageHandler
         Assert.Equal("lab-token", request.Headers.Authorization?.Parameter);
         var body = JsonNode.Parse(await request.Content!.ReadAsStringAsync(ct))!;
         lock (Results)
+        {
             Results.Add(body);
+            ResultUris.Add(request.RequestUri);
+        }
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"resourceType":"Bundle","type":"transaction-response","entry":[]}""") };
     }
 }

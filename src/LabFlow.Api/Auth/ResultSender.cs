@@ -67,7 +67,7 @@ public class ResultSender(LabDatabases databases, IConfiguration config, IOption
                 m.Attempts++;
                 try
                 {
-                    using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(new Uri(options.Value.Authority!), "fhir"))
+                    using var request = new HttpRequestMessage(HttpMethod.Post, options.Value.ResultsEndpoint())
                     {
                         Content = new StringContent(m.PayloadJson, Encoding.UTF8, "application/fhir+json"),
                     };

@@ -84,6 +84,8 @@ number. Scripts from 050 on are safe to re-run and are applied to existing datab
 FHIR DiagnosticReport per ordered test with an Observation per analyte (LOINC, value, unit, range, H/L), `final`
 first and `amended` for a correction. Messages wait in `lab.OutboundMessage` (`database/051_outbound_messages.sql`)
 until delivered; LabFlow authenticates with its own client id and secret (client credentials, scope `results`).
+They go to ClinicHub's own `/fhir` unless `ClinicHub:ResultsUrl` names another address, such as IntegrationHub's
+`http://localhost:5700/route/clinichub/fhir` (the hub forwards LabFlow's ClinicHub token unchanged).
 
 **Cancellation.** ClinicHub withdraws a test by sending its ServiceRequest again with status `revoked`. A waiting
 order loses the test (`database/052_order_cancellation.sql` keeps it, marked cancelled, with the reason); on a

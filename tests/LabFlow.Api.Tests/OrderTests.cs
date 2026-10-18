@@ -165,6 +165,7 @@ public class ResultTests(PerClinicFactory factory) : IClassFixture<PerClinicFact
 
         var sender = factory.Services.GetRequiredService<ResultSender>();
         Assert.Equal(1, await sender.SendAsync());
+        Assert.Equal(new Uri("https://hub.test/fhir"), factory.Hub.ResultUris.Last());   // no ResultsUrl: ClinicHub's own /fhir
         var bundle = factory.Hub.Results.Last();
         var reports = bundle["entry"]!.AsArray().Select(e => e!["resource"]!).Where(r => (string)r["resourceType"]! == "DiagnosticReport").ToList();
         Assert.Equal(2, reports.Count);
