@@ -71,7 +71,12 @@ Where the data lives is a setting:
 ```powershell
 dotnet run --project src/LabFlow.Api --launch-profile connected              # one lab database
 dotnet run --project src/LabFlow.Api --launch-profile connected-per-clinic   # a database per clinic
+dotnet run --project src/LabFlow.Api --launch-profile via-hub                # connected, through IntegrationHub
 ```
+
+`via-hub` is `connected` with released results (`ClinicHub:ResultsUrl`) and the accounting (`ClinicHub:FinanceUrl`)
+sent to IntegrationHub's routes on :5700; orders come through it when ClinicHub runs its own `via-hub` profile. To
+switch back, run `connected` again.
 
 **Electronic orders.** Tests ordered at a ClinicHub visit arrive at `/fhir` as a FHIR R4 transaction Bundle (Patient,
 Practitioner, ServiceRequests coded with LOINC or LabFlow's own panel codes), authenticated with a token ClinicHub signs
