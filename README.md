@@ -16,6 +16,10 @@ for background work (email outbox, AI interpretation, PDF rendering).
 - [ ] Specimen collection and verification screens
 - [ ] Patient portal and PDF report
 - [x] ETL from the legacy `Laboratory` database: SSIS package → de-identified staging → `dw` star schema (`etl/`)
+- [x] Monthly lab volumes for the group's Analytics: only totals leave (`dw.vw_AnalyticsMonthly`,
+      `database/054_analytics_dw_view.sql`), read by the login `analytics_dw_reader`, which may read that view and the
+      test catalogue's names and codes and nothing else (`database/tools/analytics_dw_reader.sql`, run once per server
+      with `-v ReaderPassword=...`)
 - [ ] Azure Data Factory version of the ETL, Power BI report on `dw`
 - [ ] Azure Functions (notifications, AI interpretation)
 - [ ] HL7 v2 ORU export (OLIS simulation)
