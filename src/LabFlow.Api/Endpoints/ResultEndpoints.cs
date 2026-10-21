@@ -260,6 +260,11 @@ public static class ResultEndpoints
                 ["resource"] = new JsonObject
                 {
                     ["resourceType"] = "DiagnosticReport", ["status"] = status,
+                    // The order's confidentiality label comes back on its results (IntegrationHub's flow 7).
+                    ["meta"] = order.Confidentiality is { } label ? new JsonObject
+                    {
+                        ["security"] = new JsonArray(new JsonObject { ["system"] = OrderEndpoints.ConfidentialitySystem, ["code"] = label }),
+                    } : null,
                     ["identifier"] = new JsonArray(new JsonObject { ["system"] = "urn:labflow:accession", ["value"] = $"{requisition.AccessionNumber}-{item.Test.Code}" }),
                     ["basedOn"] = new JsonArray(new JsonObject
                     {

@@ -243,7 +243,10 @@ function ElectronicOrders({ locationId, onRequisition, onError }: {
             <tr key={o.electronicOrderId}>
               <td className="muted">{new Date(o.receivedAt).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}
                 {o.priority === 'Stat' && <strong className="badge">STAT</strong>}</td>
-              <td>{o.patient}<div className="muted mono">{o.mrn} · born {o.dateOfBirth}</div></td>
+              <td>{o.patient}{o.confidentiality && (
+                <strong className="badge" title="The patient has a consent directive at the clinic: share these results only with those caring for them">
+                  {o.confidentiality === 'V' ? 'Very restricted' : 'Restricted'}</strong>)}
+                <div className="muted mono">{o.mrn} · born {o.dateOfBirth}</div></td>
               <td>{o.tests.join(', ')}</td>
               <td>{o.practitioner}<div className="muted">{o.sourceClinic}</div></td>
               <td className="muted">{o.clinicalNotes}</td>

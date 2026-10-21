@@ -255,6 +255,13 @@ public class ElectronicOrder
     public string Status { get; set; } = "Waiting";
     public DateTime ReceivedAt { get; set; }
     public int? RequisitionId { get; set; }
+
+    /// <summary>The clinic's MRN of the patient (ClinicHub's), so that a merge there can be followed here.</summary>
+    public string? SourceMrn { get; set; }
+
+    /// <summary>ClinicHub's confidentiality label on the order: R restricted, V very restricted; null for none.</summary>
+    public string? Confidentiality { get; set; }
+
     public List<ElectronicOrderItem> Items { get; set; } = [];
 }
 

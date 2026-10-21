@@ -23,7 +23,8 @@ public static class OrderEndpoints
     public const string OhipBillingNumber = "urn:clinichub:ohip-billing-number";
 
     public record ElectronicOrderRow(int ElectronicOrderId, string SourceClinic, int PatientId, string Patient, string Mrn, DateOnly DateOfBirth,
-        string Practitioner, string Priority, string? ClinicalNotes, DateTime ReceivedAt, string[] Tests, string Status, int? RequisitionId);
+        string Practitioner, string Priority, string? ClinicalNotes, DateTime ReceivedAt, string[] Tests, string Status, int? RequisitionId,
+        string? Confidentiality);
     public record RequisitionFromOrder(short LocationId);
 
     public static void MapOrderEndpoints(this IEndpointRouteBuilder app)
@@ -43,6 +44,8 @@ public static class OrderEndpoints
             if ((string?)bundle?["resourceType"] != "Bundle" || (string?)bundle["type"] != "transaction")
                 return Outcome("Expected a FHIR transaction Bundle.");
             var entries = bundle["entry"]?.AsArray().Select(e => e?["resource"]).ToList() ?? [];
+            if (entries is [{ } only] && (string?)only["resourceType"] == "Patient" && only["link"] is not null)
+                return await MergeAsync(db, audit, slug, only, ct);
             var revoked = entries.Where(r => (string?)r?["resourceType"] == "ServiceRequest" && (string?)r?["status"] == "revoked").ToList();
             if (revoked.Count > 0)
                 return revoked.Count == entries.Count
@@ -87,6 +90,7 @@ public static class OrderEndpoints
                 var order = new ElectronicOrder
                 {
                     SourceClinic = slug, ExternalId = requisition, Patient = local, Practitioner = doctor,
+                    SourceMrn = Mrn(patient, slug), Confidentiality = requests.Select(Confidentiality).Max(),
                     Priority = requests.Any(r => (string?)r?["priority"] == "stat") ? "Stat" : "Routine",
                     ClinicalNotes = string.Join("; ", requests.SelectMany(r => r?["note"]?.AsArray() ?? []).Select(n => (string?)n?["text"])
                         .Where(t => !string.IsNullOrWhiteSpace(t)).Distinct()) is { Length: > 0 } notes ? notes[..Math.Min(notes.Length, 1000)] : null,
@@ -125,7 +129,8 @@ public static class OrderEndpoints
                 .OrderByDescending(o => o.Priority == "Stat").ThenBy(o => o.ReceivedAt)
                 .Select(o => new ElectronicOrderRow(o.ElectronicOrderId, o.SourceClinic, o.PatientId, o.Patient.LastName + ", " + o.Patient.FirstName,
                     o.Patient.Mrn, o.Patient.DateOfBirth, "Dr. " + o.Practitioner.FirstName + " " + o.Practitioner.LastName, o.Priority, o.ClinicalNotes,
-                    o.ReceivedAt, o.Items.Where(i => i.CancelledAt == null).Select(i => i.Test.NameEn).ToArray(), o.Status, o.RequisitionId))
+                    o.ReceivedAt, o.Items.Where(i => i.CancelledAt == null).Select(i => i.Test.NameEn).ToArray(), o.Status, o.RequisitionId,
+                    o.Confidentiality))
                 .ToListAsync(ct));
 
         // The patient is at the collection desk: the order becomes a requisition, with the same checks as one typed at reception.
@@ -153,6 +158,59 @@ public static class OrderEndpoints
     /// The clinic withdraws tests. Still waiting: struck from the order. On a requisition: the item is cancelled unless a
     /// result has been entered, in which case the answer is 409 and the clinic is told to call the lab. All or nothing.
     /// </summary>
+    public const string ConfidentialitySystem = "http://terminology.hl7.org/CodeSystem/v3-Confidentiality";
+
+    /// <summary>The clinic's MRN of the Bundle's patient (urn:clinichub:{clinic}:mrn), if it has one.</summary>
+    private static string? Mrn(JsonNode patient, string slug)
+    {
+        var mrn = (string?)patient["identifier"]?.AsArray().FirstOrDefault(i => (string?)i?["system"] == $"urn:clinichub:{slug}:mrn")?["value"];
+        return string.IsNullOrWhiteSpace(mrn) ? null : mrn.Trim()[..Math.Min(mrn.Trim().Length, 40)];
+    }
+
+    /// <summary>An order's label: R or V, any other code of that system treated as R (the contract's rule); null for none.</summary>
+    public static string? Confidentiality(JsonNode? resource)
+    {
+        var codes = resource?["meta"]?["security"]?.AsArray().Where(c => (string?)c?["system"] == ConfidentialitySystem)
+            .Select(c => (string?)c!["code"]).Where(c => !string.IsNullOrEmpty(c)).ToList() ?? [];
+        if (codes.Count == 0 || codes.All(c => c is "U" or "L" or "M" or "N"))
+            return null;
+        return codes.Contains("V") ? "V" : "R";
+    }
+
+    /// <summary>
+    /// ClinicHub merged two records (IntegrationHub's flow 6). LabFlow keeps its own patients, matched by health card or
+    /// name and birth date, so the merge moves the clinic's MRN on its orders from the merged record to the survivor's.
+    /// When the two records' orders are on two different patients here, that is written to the audit log as a possible
+    /// duplicate for the lab to look at; LabFlow does not merge its own patients on the clinic's word. 200 either way,
+    /// and for a record never seen here.
+    /// </summary>
+    private static async Task<IResult> MergeAsync(LabFlowDbContext db, AuditLogger audit, string slug, JsonNode patient, CancellationToken ct)
+    {
+        var system = $"urn:clinichub:{slug}:mrn";
+        var merged = Mrn(patient, slug);
+        var replacedBy = patient["link"]?.AsArray().FirstOrDefault(l => (string?)l?["type"] == "replaced-by")?["other"]?["identifier"];
+        var survivor = (string?)replacedBy?["system"] == system ? ((string?)replacedBy?["value"])?.Trim() : null;
+        if (merged is null || string.IsNullOrWhiteSpace(survivor) || merged == survivor)
+            return Outcome($"A merge names the merged and the surviving MRN, both {system}.");
+
+        var moved = await db.ElectronicOrders.Where(o => o.SourceClinic == slug && o.SourceMrn == merged).ToListAsync(ct);
+        if (moved.Count > 0)
+        {
+            var theirs = await db.ElectronicOrders.Where(o => o.SourceClinic == slug && o.SourceMrn == survivor).Select(o => o.PatientId).Distinct().ToListAsync(ct);
+            foreach (var o in moved)
+                o.SourceMrn = survivor;
+            var patients = moved.Select(o => o.PatientId).Concat(theirs).Distinct().ToList();
+            audit.Log("Update", "ElectronicOrder", moved[0].ElectronicOrderId, moved[0].PatientId,
+                new { mergedAtClinic = slug, orders = moved.Count, possibleDuplicate = patients.Count > 1 ? patients : null });
+            await db.SaveChangesAsync(ct);
+        }
+        return Results.Text(new JsonObject
+        {
+            ["resourceType"] = "Bundle", ["type"] = "transaction-response",
+            ["entry"] = new JsonArray(new JsonObject { ["response"] = new JsonObject { ["status"] = "200 OK" } }),
+        }.ToJsonString(), "application/fhir+json");
+    }
+
     private static async Task<IResult> CancelAsync(LabFlowDbContext db, AuditLogger audit, string slug, List<JsonNode> revoked, CancellationToken ct)
     {
         var system = $"urn:clinichub:{slug}:service-request";

@@ -53,6 +53,8 @@ export type LabRequisition = {
 export type ElectronicOrder = {
   electronicOrderId: number; sourceClinic: string; patientId: number; patient: string; mrn: string; dateOfBirth: string
   practitioner: string; priority: 'Routine' | 'Stat'; clinicalNotes: string | null; receivedAt: string; tests: string[]
+  /** The clinic's confidentiality label (a consent directive): R restricted, V very restricted. */
+  confidentiality: 'R' | 'V' | null
 }
 
 export type Requisition = {
