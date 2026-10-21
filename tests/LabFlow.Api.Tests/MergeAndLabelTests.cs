@@ -78,9 +78,12 @@ public class MergeAndLabelTests(PerClinicFactory factory) : IClassFixture<PerCli
         factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk", "results.enter");
         var lab = await factory.SignInAsync("41", "Lab Tech", "harbourview", "frontdesk", "results.enter");
         var waiting = (await Json(await lab.GetAsync("/api/reception/electronic-orders"))).AsArray();
-        var labelled = waiting.Single(o => (string)o!["patient"]! == "Varga, Mei")!;
-        Assert.Equal("V", (string)labelled["confidentiality"]!);
-        Assert.Equal("R", (string)waiting.Single(o => (string)o!["patient"]! == "Okafor, Mei")!["confidentiality"]!);
+        // Listed so they are not lost, but who and what stay hidden until the glass is broken.
+        var labelled = waiting.Single(o => (string?)o!["confidentiality"] == "V")!;
+        Assert.Equal("Restricted", (string)labelled["patient"]!);
+        Assert.Equal("", (string)labelled["mrn"]!);
+        Assert.Empty(labelled["tests"]!.AsArray());
+        Assert.Equal("R", (string)waiting.Single(o => (string?)o!["confidentiality"] == "R")!["confidentiality"]!);
 
         var location = (int)(await Json(await lab.GetAsync("/api/locations")))[0]!["locationId"]!;
         var orderId = (int)labelled["electronicOrderId"]!;
@@ -95,6 +98,8 @@ public class MergeAndLabelTests(PerClinicFactory factory) : IClassFixture<PerCli
         (await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{orderId}/override", new { reason = "Patient is at the desk for the draw" })).EnsureSuccessStatusCode();
         var requisition = (int)(await Json(await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{orderId}/requisition", new { locationId = location })))["requisitionId"]!;
         Assert.Equal(HttpStatusCode.OK, (await lab.GetAsync($"/api/lab/requisitions/{requisition}")).StatusCode);   // the opener carries on
+        // After the override the opener's requisition is out of the waiting list anyway; the other order is still masked.
+        Assert.DoesNotContain((await Json(await lab.GetAsync("/api/reception/electronic-orders"))).AsArray(), o => (int)o!["electronicOrderId"]! == orderId);
 
         // Someone else is shut out of the results until they say why, and the override is on the record.
         factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk", "results.enter");

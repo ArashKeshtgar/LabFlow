@@ -123,15 +123,22 @@ public static class OrderEndpoints
 
         var api = app.MapGroup("/api/reception/electronic-orders").WithTags("Reception").RequireAuthorization(Policies.FrontDesk);
 
-        api.MapGet("/", async (int? patientId, LabFlowDbContext db, CancellationToken ct) =>
-            await db.ElectronicOrders.AsNoTracking()
+        api.MapGet("/", async (int? patientId, ClaimsPrincipal user, LabFlowDbContext db, ConfidentialityGate gate, CancellationToken ct) =>
+        {
+            var rows = await db.ElectronicOrders.AsNoTracking()
                 .Where(o => o.Status == "Waiting" && (patientId == null || o.PatientId == patientId))
                 .OrderByDescending(o => o.Priority == "Stat").ThenBy(o => o.ReceivedAt)
                 .Select(o => new ElectronicOrderRow(o.ElectronicOrderId, o.SourceClinic, o.PatientId, o.Patient.LastName + ", " + o.Patient.FirstName,
                     o.Patient.Mrn, o.Patient.DateOfBirth, "Dr. " + o.Practitioner.FirstName + " " + o.Practitioner.LastName, o.Priority, o.ClinicalNotes,
                     o.ReceivedAt, o.Items.Where(i => i.CancelledAt == null).Select(i => i.Test.NameEn).ToArray(), o.Status, o.RequisitionId,
                     o.Confidentiality))
-                .ToListAsync(ct));
+                .ToListAsync(ct);
+            // A restricted order is listed, so it is not lost, but who it is for and what was ordered stay hidden until the glass is broken.
+            return rows.Select(o => o.Confidentiality is null || gate.IsOpen(user, $"order:{o.ElectronicOrderId}") ? o : o with
+            {
+                Patient = "Restricted", Mrn = "", DateOfBirth = default, Practitioner = "", ClinicalNotes = null, Tests = [],
+            }).ToList();
+        });
 
         // The patient is at the collection desk: the order becomes a requisition, with the same checks as one typed at reception.
         api.MapPost("/{id:int}/override", async (int id, ConfidentialityGate.OverrideBody body, ClaimsPrincipal user, LabFlowDbContext db, ConfidentialityGate gate, AuditLogger audit, CancellationToken ct) =>

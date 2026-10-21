@@ -99,7 +99,7 @@ They go to ClinicHub's own `/fhir` unless `ClinicHub:ResultsUrl` names another a
 **Restricted items.** An order ClinicHub labels (the patient has a consent directive there: `R` restricted, `V` very
 restricted) is closed to everyone until a user says why they need it: making the requisition or opening its results answers `403 restricted` and the screen asks
 for a reason (at least 10 characters), which is logged with the user's name; the access is for that user and lasts one
-hour (it is kept in memory, so a restart closes it). The label goes back on the result. The results worklist lists a closed requisition with the patient shown as "Restricted" and no values; the reason is in the audit log (`RestrictedOverride`, script 056).
+hour (it is kept in memory, so a restart closes it). The label goes back on the result. The reception list and the results worklist list a closed order or requisition with the patient shown as "Restricted" and no tests or values, so it is not lost; the reason is in the audit log (`RestrictedOverride`, script 056).
 
 **Cancellation.** ClinicHub withdraws a test by sending its ServiceRequest again with status `revoked`. A waiting
 order loses the test (`database/052_order_cancellation.sql` keeps it, marked cancelled, with the reason); on a
