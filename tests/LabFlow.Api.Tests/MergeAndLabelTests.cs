@@ -83,8 +83,39 @@ public class MergeAndLabelTests(PerClinicFactory factory) : IClassFixture<PerCli
         Assert.Equal("R", (string)waiting.Single(o => (string)o!["patient"]! == "Okafor, Mei")!["confidentiality"]!);
 
         var location = (int)(await Json(await lab.GetAsync("/api/locations")))[0]!["locationId"]!;
-        var requisition = (int)(await Json(await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{(int)labelled["electronicOrderId"]!}/requisition",
-            new { locationId = location })))["requisitionId"]!;
+        var orderId = (int)labelled["electronicOrderId"]!;
+
+        // Closed until someone says why; the unlabelled order is not.
+        var closed = await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{orderId}/requisition", new { locationId = location });
+        Assert.Equal(HttpStatusCode.Forbidden, closed.StatusCode);
+        var refusal = JsonNode.Parse(await closed.Content.ReadAsStringAsync())!;
+        Assert.Equal("restricted", (string)refusal["code"]!);
+        Assert.Equal("V", (string)refusal["label"]!);
+        Assert.Equal(HttpStatusCode.BadRequest, (await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{orderId}/override", new { reason = "short" })).StatusCode);
+        (await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{orderId}/override", new { reason = "Patient is at the desk for the draw" })).EnsureSuccessStatusCode();
+        var requisition = (int)(await Json(await lab.PostAsJsonAsync($"/api/reception/electronic-orders/{orderId}/requisition", new { locationId = location })))["requisitionId"]!;
+        Assert.Equal(HttpStatusCode.OK, (await lab.GetAsync($"/api/lab/requisitions/{requisition}")).StatusCode);   // the opener carries on
+
+        // Someone else is shut out of the results until they say why, and the override is on the record.
+        factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk", "results.enter");
+        var other = await factory.SignInAsync("42", "Second Tech", "harbourview", "frontdesk", "results.enter");
+        Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync($"/api/lab/requisitions/{requisition}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await other.PostAsync($"/api/lab/requisitions/{requisition}/release", null)).StatusCode);
+        (await other.PostAsJsonAsync($"/api/lab/requisitions/{requisition}/override", new { reason = "Covering the bench this afternoon" })).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.OK, (await other.GetAsync($"/api/lab/requisitions/{requisition}")).StatusCode);
+        Assert.Equal(2, await Scalar<int>("SELECT COUNT(*) FROM audit.AccessLog WHERE Action = 'RestrictedOverride'"));
+
+        // The worklist keeps it listed, but names and values are hidden from someone who has not opened it.
+        factory.TokenEndpoint = () => ConnectedFactory.Granted("frontdesk", "results.enter");
+        var third = await factory.SignInAsync("43", "Third Tech", "harbourview", "frontdesk", "results.enter");
+        var hidden = (await Json(await third.GetAsync("/api/lab/worklist"))).AsArray().Single(r => (int)r!["requisitionId"]! == requisition)!;
+        Assert.Equal("Restricted", (string)hidden["patient"]!);
+        Assert.Equal("V", (string)hidden["confidentiality"]!);
+        Assert.All(hidden["items"]!.AsArray().SelectMany(i => i!["analytes"]!.AsArray()), a => Assert.Null(a!["value"]));
+        var shown = (await Json(await other.GetAsync("/api/lab/worklist"))).AsArray().Single(r => (int)r!["requisitionId"]! == requisition)!;
+        Assert.Equal("Varga, Mei", (string)shown["patient"]!);
+        Assert.Contains("Covering the bench", await Scalar<string>("SELECT TOP 1 Details FROM audit.AccessLog WHERE Action = 'RestrictedOverride' ORDER BY AuditId DESC") ?? "");
+        lab = other;
         var sheet = await Json(await lab.GetAsync($"/api/lab/requisitions/{requisition}"));
         var item = sheet["items"]!.AsArray().Single()!;
         await Json(await lab.PutAsJsonAsync($"/api/lab/requisitions/{requisition}/results", new

@@ -134,11 +134,28 @@ public static class OrderEndpoints
                 .ToListAsync(ct));
 
         // The patient is at the collection desk: the order becomes a requisition, with the same checks as one typed at reception.
-        api.MapPost("/{id:int}/requisition", async (int id, RequisitionFromOrder req, ClaimsPrincipal user, LabFlowDbContext db, AuditLogger audit, CancellationToken ct) =>
+        api.MapPost("/{id:int}/override", async (int id, ConfidentialityGate.OverrideBody body, ClaimsPrincipal user, LabFlowDbContext db, ConfidentialityGate gate, AuditLogger audit, CancellationToken ct) =>
+        {
+            var order = await db.ElectronicOrders.AsNoTracking().SingleOrDefaultAsync(o => o.ElectronicOrderId == id, ct);
+            if (order is null)
+                return Results.NotFound();
+            if (order.Confidentiality is null)
+                return Results.Ok(new { open = true });
+            if (!ConfidentialityGate.ReasonOk(body.Reason))
+                return Results.BadRequest(new { title = $"Say why, in at least {ConfidentialityGate.MinReason} characters." });
+            var until = gate.Open(user, $"order:{id}");
+            audit.Log("RestrictedOverride", "ElectronicOrder", id, order.PatientId, new { label = order.Confidentiality, reason = body.Reason!.Trim() });
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(new { open = true, until });
+        });
+
+        api.MapPost("/{id:int}/requisition", async (int id, RequisitionFromOrder req, ClaimsPrincipal user, LabFlowDbContext db, AuditLogger audit, ConfidentialityGate gate, CancellationToken ct) =>
         {
             var order = await db.ElectronicOrders.Include(o => o.Items).SingleOrDefaultAsync(o => o.ElectronicOrderId == id, ct);
             if (order is null)
                 return Results.NotFound();
+            if (order.Confidentiality is { } label && !gate.IsOpen(user, $"order:{id}"))
+                return ConfidentialityGate.Closed(label);
             if (order.Status != "Waiting")
                 return Results.Conflict(new { error = "This order has already been made into a requisition." });
 
@@ -148,6 +165,8 @@ public static class OrderEndpoints
             if (created is not Created<ReceptionEndpoints.RequisitionDto> ok)
                 return created;
             order.Status = "Requisitioned";
+            if (order.Confidentiality is not null && created is Created<ReceptionEndpoints.RequisitionDto> made)
+                gate.Open(user, $"requisition:{made.Value!.RequisitionId}");   // whoever opened the order carries on with its results
             order.RequisitionId = ok.Value!.RequisitionId;
             await db.SaveChangesAsync(ct);
             return created;

@@ -18,16 +18,44 @@ public static class ResultEndpoints
     public record Analyte(int TestId, string Code, string Name, string ResultType, string? Unit, string? Value, string? Flag, string? Range, string? Status);
     public record ItemRow(int RequisitionItemId, string Code, string Name, string Status, Analyte[] Analytes);
     public record RequisitionRow(int RequisitionId, string AccessionNumber, string Patient, string Mrn, string Sex, int AgeYears, string Priority,
-        string Status, DateTime ReceivedAt, string? ClinicalNotes, string Practitioner, string? FromClinic, int ReportVersion, ItemRow[] Items);
+        string Status, DateTime ReceivedAt, string? ClinicalNotes, string Practitioner, string? FromClinic, int ReportVersion, ItemRow[] Items,
+        string? Confidentiality = null);
     public record EnteredValue(int RequisitionItemId, int TestId, string? Value);
     public record EnterResults(EnteredValue[] Results);
 
     public static void MapResultEndpoints(this IEndpointRouteBuilder app)
     {
+        // Breaking the glass for a restricted requisition (the order's patient has a consent directive): a reason, logged.
+        // Outside the filtered group, since the filter is what it opens.
+        app.MapPost("/api/lab/requisitions/{id:int}/override", async (int id, ConfidentialityGate.OverrideBody body, ClaimsPrincipal user, LabFlowDbContext db, ConfidentialityGate gate, AuditLogger audit, CancellationToken ct) =>
+        {
+            var label = await RestrictedLabelAsync(db, id, ct);
+            if (label is null)
+                return Results.Ok(new { open = true });
+            if (!ConfidentialityGate.ReasonOk(body.Reason))
+                return Results.BadRequest(new { title = $"Say why, in at least {ConfidentialityGate.MinReason} characters." });
+            var until = gate.Open(user, $"requisition:{id}");
+            audit.Log("RestrictedOverride", "Results", id, await db.Requisitions.Where(r => r.RequisitionId == id).Select(r => r.PatientId).SingleAsync(ct),
+                new { label, reason = body.Reason!.Trim() });
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(new { open = true, until });
+        }).RequireAuthorization(Policies.ResultsEntry).ExcludeFromDescription();
+
         var api = app.MapGroup("/api/lab").WithTags("Results").RequireAuthorization(Policies.ResultsEntry);
+        // A requisition from a restricted order is closed until the user has broken the glass for it (403 restricted).
+        api.AddEndpointFilter(async (ctx, next) =>
+        {
+            var http = ctx.HttpContext;
+            if (!int.TryParse(http.Request.RouteValues["id"]?.ToString(), out var id))
+                return await next(ctx);
+            var label = await RestrictedLabelAsync(http.RequestServices.GetRequiredService<LabFlowDbContext>(), id, http.RequestAborted);
+            return label is not null && !http.RequestServices.GetRequiredService<ConfidentialityGate>().IsOpen(http.User, $"requisition:{id}")
+                ? ConfidentialityGate.Closed(label)
+                : await next(ctx);
+        });
 
         // Requisitions to result (and the ones released today, for corrections).
-        api.MapGet("/worklist", async (LabFlowDbContext db, CancellationToken ct) =>
+        api.MapGet("/worklist", async (ClaimsPrincipal user, LabFlowDbContext db, ConfidentialityGate gate, CancellationToken ct) =>
         {
             var today = DateTime.UtcNow.Date;
             var ids = await db.Requisitions.AsNoTracking()
@@ -35,7 +63,16 @@ public static class ResultEndpoints
                 .OrderByDescending(r => r.Priority == "Stat").ThenBy(r => r.ReceivedAt).Select(r => r.RequisitionId).Take(100).ToListAsync(ct);
             var rows = new List<RequisitionRow>();
             foreach (var id in ids)
-                rows.Add((await LoadAsync(db, id, ct))!);
+            {
+                var row = (await LoadAsync(db, id, ct))!;
+                // A restricted requisition is listed, so it is not lost, but names and values stay hidden until the glass is broken.
+                var label = await RestrictedLabelAsync(db, id, ct);
+                rows.Add(label is null ? row : gate.IsOpen(user, $"requisition:{id}") ? row with { Confidentiality = label } : row with
+                {
+                    Patient = "Restricted", Mrn = "", Sex = "U", AgeYears = 0, ClinicalNotes = null, Practitioner = "", FromClinic = null, Confidentiality = label,
+                    Items = [.. row.Items.Select(i => i with { Analytes = [.. i.Analytes.Select(a => a with { Value = null, Flag = null, Range = null })] })],
+                });
+            }
             return rows;
         });
 
@@ -189,6 +226,10 @@ public static class ResultEndpoints
             requisition.Status = "InProgress";
         requisition.UpdatedAt = DateTime.UtcNow;
     }
+
+    /// <summary>The confidentiality label of the electronic order a requisition was made from, or null.</summary>
+    private static Task<string?> RestrictedLabelAsync(LabFlowDbContext db, int requisitionId, CancellationToken ct) =>
+        db.ElectronicOrders.AsNoTracking().Where(o => o.RequisitionId == requisitionId).Select(o => o.Confidentiality).FirstOrDefaultAsync(ct);
 
     private static async Task<RequisitionRow?> LoadAsync(LabFlowDbContext db, int id, CancellationToken ct)
     {

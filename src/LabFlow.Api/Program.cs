@@ -20,6 +20,8 @@ if (!connected)
 }
 
 builder.Services.AddScoped<AuditLogger>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ConfidentialityGate>();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { api, ApiError, torontoToday, type AppointmentRow, type ElectronicOrder, type Location, type PatientDetails, type PatientSummary, type Requisition } from '../api'
+import { api, ApiError, askWhy, isRestricted, torontoToday, type AppointmentRow, type ElectronicOrder, type Location, type PatientDetails, type PatientSummary, type Requisition } from '../api'
 import { emptyPatient, PatientFields } from '../components/PatientFields'
 import { RequisitionForm } from '../components/RequisitionForm'
 import { RequisitionView } from '../components/RequisitionView'
@@ -251,8 +251,17 @@ function ElectronicOrders({ locationId, onRequisition, onError }: {
               <td>{o.practitioner}<div className="muted">{o.sourceClinic}</div></td>
               <td className="muted">{o.clinicalNotes}</td>
               <td><button className="btn small primary" onClick={async () => {
-                try { onRequisition(await api.requisitionFromOrder(o.electronicOrderId, locationId)); load() }
-                catch (e) { onError((e as Error).message) }
+                try {
+                  try { onRequisition(await api.requisitionFromOrder(o.electronicOrderId, locationId)) }
+                  catch (e) {
+                    if (!isRestricted(e)) throw e
+                    const why = askWhy()
+                    if (!why) return
+                    await api.overrideOrder(o.electronicOrderId, why)
+                    onRequisition(await api.requisitionFromOrder(o.electronicOrderId, locationId))
+                  }
+                  load()
+                } catch (e) { onError((e as Error).message) }
               }}>Patient is here: make requisition</button></td>
             </tr>
           ))}

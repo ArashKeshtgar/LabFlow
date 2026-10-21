@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, ApiError, type LabRequisition } from '../api'
+import { api, ApiError, askWhy, isRestricted, type LabRequisition } from '../api'
 
 /**
  * Resulting: pick a requisition, enter each analyte, save (flags come from the reference range for the patient's
@@ -14,6 +14,24 @@ export function ResultsPage({ canUse }: { canUse: boolean }) {
 
   const load = useCallback(() => { if (canUse) api.labWorklist().then(setList).catch(e => setMessage({ ok: false, text: (e as Error).message })) }, [canUse])
   useEffect(load, [load])
+
+  /** A restricted requisition is listed with its names hidden: opening it asks why, logs it, and fetches the real sheet. */
+  const openChecked = async (r: LabRequisition) => {
+    if (!r.confidentiality || r.patient !== 'Restricted') return open(r)
+    try {
+      let sheet: LabRequisition
+      try { sheet = await api.labRequisition(r.requisitionId) }
+      catch (e) {
+        if (!isRestricted(e)) throw e
+        const why = askWhy()
+        if (!why) return
+        await api.overrideRequisition(r.requisitionId, why)
+        sheet = await api.labRequisition(r.requisitionId)
+      }
+      open(sheet)
+      load()
+    } catch (e) { setMessage({ ok: false, text: (e as Error).message }) }
+  }
 
   const open = (r: LabRequisition) => {
     setCurrent(r)
@@ -66,7 +84,7 @@ export function ResultsPage({ canUse }: { canUse: boolean }) {
         <ul className="req-list">
           {list?.map(r => (
             <li key={r.requisitionId}>
-              <button className={current?.requisitionId === r.requisitionId ? 'on' : ''} onClick={() => open(r)}>
+              <button className={current?.requisitionId === r.requisitionId ? 'on' : ''} onClick={() => openChecked(r)}>
                 <span className="mono">{r.accessionNumber}</span> {r.priority === 'Stat' && <strong className="badge">STAT</strong>}
                 <span>{r.patient}</span>
                 <span className="muted">{r.status}{r.fromClinic ? ` · from ${r.fromClinic}` : ''}</span>

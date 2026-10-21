@@ -43,6 +43,8 @@ export type CreateRequisition = {
 export type LabRequisition = {
   requisitionId: number; accessionNumber: string; patient: string; mrn: string; sex: string; ageYears: number; priority: 'Routine' | 'Stat'
   status: string; receivedAt: string; clinicalNotes: string | null; practitioner: string; fromClinic: string | null; reportVersion: number
+  /** The clinic's confidentiality label; the row is hidden (patient "Restricted") until the user has opened it. */
+  confidentiality?: 'R' | 'V' | null
   items: {
     requisitionItemId: number; code: string; name: string; status: string
     analytes: { testId: number; code: string; name: string; resultType: string; unit: string | null; value: string | null; flag: string | null; range: string | null; status: string | null }[]
@@ -88,10 +90,17 @@ export function bookingClinic(): string {
 
 /** Thrown for any non-2xx response. `fieldErrors` is filled for 400 validation problems. */
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public fieldErrors: Record<string, string[]> = {}) {
+  constructor(public status: number, message: string, public fieldErrors: Record<string, string[]> = {}, public data: Record<string, unknown> = {}) {
     super(message)
   }
 }
+
+/** The 403 a restricted item answers with until the user has said why they need it (a consent directive at the clinic). */
+export const isRestricted = (e: unknown): e is ApiError => e instanceof ApiError && e.status === 403 && e.data.code === 'restricted'
+
+/** Asks why, in the browser's own dialog; null when the user declines. The reason is logged with their name. */
+export const askWhy = (): string | null =>
+  window.prompt('The patient has a consent directive at the clinic. Why do you need to open this? It is logged with your name.')?.trim() || null
 
 const USER_KEY = 'labflow.demoUser'
 
@@ -118,7 +127,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const data = await res.json().catch(() => null)
   if (!res.ok) {
     const message = data?.error ?? data?.title ?? (res.status === 401 ? 'Please choose a staff user.' : res.status === 403 ? 'This user is not allowed to do that.' : `Request failed (${res.status})`)
-    throw new ApiError(res.status, message, data?.errors ?? {})
+    throw new ApiError(res.status, message, data?.errors ?? {}, data ?? {})
   }
   return data as T
 }
@@ -151,6 +160,10 @@ export const api = {
   requisitionFromOrder: (id: number, locationId: number) =>
     request<Requisition>('POST', `/reception/electronic-orders/${id}/requisition`, { locationId }),
   requisition: (id: number) => request<Requisition>('GET', `/reception/requisitions/${id}`),
+  labRequisition: (id: number) => request<LabRequisition>('GET', `/lab/requisitions/${id}`),
+  /** Break the glass for a restricted order or requisition: a reason of at least 10 characters, logged. */
+  overrideOrder: (id: number, reason: string) => request<{ open: boolean }>('POST', `/reception/electronic-orders/${id}/override`, { reason }),
+  overrideRequisition: (id: number, reason: string) => request<{ open: boolean }>('POST', `/lab/requisitions/${id}/override`, { reason }),
 }
 
 /** Today's date in Toronto as yyyy-mm-dd, whatever the browser's time zone. */
