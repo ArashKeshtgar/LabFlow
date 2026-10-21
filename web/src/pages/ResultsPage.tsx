@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, ApiError, askWhy, isRestricted, type LabRequisition } from '../api'
+import { api, ApiError, isRestricted, type LabRequisition } from '../api'
+import { RestrictedGate } from '../components/RestrictedGate'
 
 /**
  * Resulting: pick a requisition, enter each analyte, save (flags come from the reference range for the patient's
@@ -11,26 +12,23 @@ export function ResultsPage({ canUse }: { canUse: boolean }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [errors, setErrors] = useState<Record<string, string[]>>({})
+  /** A restricted requisition the user tried to open: the gate asks why, logs it, and fetches the real sheet. */
+  const [closed, setClosed] = useState<LabRequisition | null>(null)
 
   const load = useCallback(() => { if (canUse) api.labWorklist().then(setList).catch(e => setMessage({ ok: false, text: (e as Error).message })) }, [canUse])
   useEffect(load, [load])
 
-  /** A restricted requisition is listed with its names hidden: opening it asks why, logs it, and fetches the real sheet. */
+  /** A restricted requisition is listed with its names hidden: opening it goes through the gate. */
   const openChecked = async (r: LabRequisition) => {
+    setClosed(null)
     if (!r.confidentiality || r.patient !== 'Restricted') return open(r)
     try {
-      let sheet: LabRequisition
-      try { sheet = await api.labRequisition(r.requisitionId) }
-      catch (e) {
-        if (!isRestricted(e)) throw e
-        const why = askWhy()
-        if (!why) return
-        await api.overrideRequisition(r.requisitionId, why)
-        sheet = await api.labRequisition(r.requisitionId)
-      }
-      open(sheet)
+      open(await api.labRequisition(r.requisitionId))
       load()
-    } catch (e) { setMessage({ ok: false, text: (e as Error).message }) }
+    } catch (e) {
+      if (isRestricted(e)) setClosed(r)
+      else setMessage({ ok: false, text: (e as Error).message })
+    }
   }
 
   const open = (r: LabRequisition) => {
@@ -93,6 +91,20 @@ export function ResultsPage({ canUse }: { canUse: boolean }) {
           ))}
         </ul>
       </section>
+
+      {closed && (
+        <RestrictedGate
+          label={closed.confidentiality ?? 'R'}
+          action="Open this requisition"
+          onCancel={() => setClosed(null)}
+          onOpen={async reason => {
+            await api.overrideRequisition(closed.requisitionId, reason)
+            open(await api.labRequisition(closed.requisitionId))
+            setClosed(null)
+            load()
+          }}
+        />
+      )}
 
       {current && (
         <section className="card">

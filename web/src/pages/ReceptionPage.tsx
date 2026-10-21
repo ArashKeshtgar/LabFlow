@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { api, ApiError, askWhy, isRestricted, torontoToday, type AppointmentRow, type ElectronicOrder, type Location, type PatientDetails, type PatientSummary, type Requisition } from '../api'
+import { api, ApiError, isRestricted, torontoToday, type AppointmentRow, type ElectronicOrder, type Location, type PatientDetails, type PatientSummary, type Requisition } from '../api'
 import { emptyPatient, PatientFields } from '../components/PatientFields'
 import { RequisitionForm } from '../components/RequisitionForm'
 import { RequisitionView } from '../components/RequisitionView'
+import { RestrictedGate } from '../components/RestrictedGate'
 
 type Panel =
   | { kind: 'none' }
@@ -225,6 +226,8 @@ function ElectronicOrders({ locationId, onRequisition, onError }: {
 }) {
   const [orders, setOrders] = useState<ElectronicOrder[] | null>(null)
   const [q, setQ] = useState('')
+  /** A restricted order the desk tried to open: the gate asks why, then opens it and makes the requisition. */
+  const [closed, setClosed] = useState<ElectronicOrder | null>(null)
   const load = useCallback(() => { api.electronicOrders().then(setOrders).catch(e => onError((e as Error).message)) }, [onError])
   useEffect(() => { load(); const t = setInterval(load, 30_000); return () => clearInterval(t) }, [load])
 
@@ -255,10 +258,8 @@ function ElectronicOrders({ locationId, onRequisition, onError }: {
                   try { onRequisition(await api.requisitionFromOrder(o.electronicOrderId, locationId)) }
                   catch (e) {
                     if (!isRestricted(e)) throw e
-                    const why = askWhy()
-                    if (!why) return
-                    await api.overrideOrder(o.electronicOrderId, why)
-                    onRequisition(await api.requisitionFromOrder(o.electronicOrderId, locationId))
+                    setClosed(o)
+                    return
                   }
                   load()
                 } catch (e) { onError((e as Error).message) }
@@ -267,6 +268,19 @@ function ElectronicOrders({ locationId, onRequisition, onError }: {
           ))}
         </tbody>
       </table>
+      {closed && (
+        <RestrictedGate
+          label={closed.confidentiality ?? 'R'}
+          action="Open this order and make the requisition"
+          onCancel={() => setClosed(null)}
+          onOpen={async reason => {
+            await api.overrideOrder(closed.electronicOrderId, reason)
+            onRequisition(await api.requisitionFromOrder(closed.electronicOrderId, locationId))
+            setClosed(null)
+            load()
+          }}
+        />
+      )}
     </section>
   )
 }

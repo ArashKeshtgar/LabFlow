@@ -98,10 +98,6 @@ export class ApiError extends Error {
 /** The 403 a restricted item answers with until the user has said why they need it (a consent directive at the clinic). */
 export const isRestricted = (e: unknown): e is ApiError => e instanceof ApiError && e.status === 403 && e.data.code === 'restricted'
 
-/** Asks why, in the browser's own dialog; null when the user declines. The reason is logged with their name. */
-export const askWhy = (): string | null =>
-  window.prompt('The patient has a consent directive at the clinic. Why do you need to open this? It is logged with your name.')?.trim() || null
-
 const USER_KEY = 'labflow.demoUser'
 
 export function getDemoUser(): string {

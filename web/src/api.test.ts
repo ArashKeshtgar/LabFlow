@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, askWhy, isRestricted } from './api'
+import { ApiError, isRestricted } from './api'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -9,15 +9,6 @@ describe('restricted items', () => {
     expect(isRestricted(new ApiError(403, 'x', {}, {}))).toBe(false)
     expect(isRestricted(new ApiError(404, 'x', {}, { code: 'restricted' }))).toBe(false)
     expect(isRestricted(new Error('x'))).toBe(false)
-  })
-
-  it('ask for a reason in the browser dialog, trimmed, and nothing when the user declines', () => {
-    const prompt = vi.fn().mockReturnValueOnce('  Patient is at the desk  ').mockReturnValueOnce(null).mockReturnValueOnce('   ')
-    vi.stubGlobal('prompt', prompt)
-    expect(askWhy()).toBe('Patient is at the desk')
-    expect(prompt.mock.calls[0]?.[0]).toMatch(/consent directive/)
-    expect(askWhy()).toBeNull()
-    expect(askWhy()).toBeNull()
   })
 
   it('are opened through the override calls: a reason, and the path of the item', async () => {
